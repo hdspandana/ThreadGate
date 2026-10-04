@@ -95,15 +95,23 @@ def diff_claims(claims: list[ValidatedClaim], vendor: Vendor) -> list[FieldDiff]
                 note = "destination domain NOT on the verified list"
                 risk = "high"
 
-        if c.field == "amount" and changed:
-            amt = _amount_value(c.new_value)
+        amount_value: float | None = None
+        if c.field == "amount":
+            # An amount is per-invoice, not a standing field on the vendor
+            # record, so quoting one is not a change to anything on file. A
+            # payment reminder that mentions INR 320,000 is not asking for the
+            # record to change. The amount is carried through as a risk
+            # modifier instead: above the vendor's typical ceiling it escalates
+            # on its own (see policy.P_AMOUNT_ABOVE_CEILING).
+            amount_value = _amount_value(c.new_value)
             ceiling = vendor.typical_max_amount()
-            if amt is not None and ceiling and amt > ceiling:
-                note = f"{amt:,.0f} exceeds the typical ceiling of {ceiling:,.0f}"
-                risk = "medium"
-            else:
-                note = f"{amt:,.0f} within the typical ceiling of {ceiling:,.0f}"
-                risk = "low"
+            changed = False
+            risk = "low"
+            note = (
+                f"{amount_value:,.0f} mentioned (typical ceiling {ceiling:,.0f})"
+                if amount_value is not None
+                else "amount mentioned"
+            )
 
         if c.field == "currency" and changed:
             note = f"{old_norm} -> {new_norm}"
@@ -117,6 +125,7 @@ def diff_claims(claims: list[ValidatedClaim], vendor: Vendor) -> list[FieldDiff]
                 risk=risk,
                 pre_registered=pre_registered,
                 note=note,
+                amount_value=amount_value,
             )
         )
     return diffs

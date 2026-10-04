@@ -25,6 +25,14 @@ from threadgate.pipeline import email_to_text, run_case  # noqa: E402
 from threadgate.records import load_cases, load_vendors  # noqa: E402
 from threadgate.tokens import unique_accounts  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "eval"))
+from run_eval import metrics, run_system  # noqa: E402
+
+CASE_SETS = {
+    "frozen_v2 (40 cases)": ROOT / "data" / "cases" / "frozen_v2.json",
+    "frozen_v1 (20 cases)": ROOT / "data" / "cases" / "frozen_v1.json",
+}
+
 try:
     from dotenv import load_dotenv
 
@@ -199,7 +207,6 @@ st.set_page_config(page_title="ThreadGate", page_icon="\U0001f6aa", layout="wide
 st.markdown(CSS, unsafe_allow_html=True)
 
 VENDORS = load_vendors(ROOT / "data" / "records" / "vendor_master.json")
-CASES = load_cases(ROOT / "data" / "cases" / "frozen_v1.json")
 
 st.title("ThreadGate")
 st.markdown(
@@ -213,6 +220,8 @@ st.markdown(
 )
 
 configured, status = key_status()
+case_set_name = st.sidebar.radio("Case set", list(CASE_SETS), index=0)
+CASES = load_cases(CASE_SETS[case_set_name])
 mode = st.sidebar.selectbox(
     "Extractor",
     ["gemini", "offline", "compromised", "compromised_quote"],
@@ -270,3 +279,36 @@ except Exception as exc:  # noqa: BLE001
 
 baseline = rules_only(case, VENDORS[case["vendor_id"]]).decision
 render(result, baseline)
+
+st.divider()
+st.subheader("The whole corpus, not one email")
+st.caption(
+    "`unsafe` counts cases that should be held but were not - the only error that can lose money. "
+    "`false hold` counts cases a human was asked to review unnecessarily - it costs time, not money."
+)
+if st.button(f"Run all {len(CASES)} cases with `{mode}`", type="secondary"):
+    systems = ["rules_raw", "rules_norm"] + ([mode] if mode != "gemini" else []) + ["compromised", "compromised_q"]
+    if mode == "gemini":
+        systems = ["rules_raw", "rules_norm", "gemini", "compromised", "compromised_q"]
+    rows = []
+    progress = st.progress(0.0)
+    for i, sysname in enumerate(dict.fromkeys(systems)):
+        with st.spinner(f"running {sysname}..."):
+            res = run_system(sysname, CASES, VENDORS)
+            m = metrics(res)
+            rows.append(
+                {
+                    "system": sysname,
+                    "accuracy %": m["accuracy"],
+                    "unsafe": m["unsafe_missed_holds"],
+                    "safety %": m["safety_pct"],
+                    "false holds": m["false_holds"],
+                }
+            )
+        progress.progress((i + 1) / len(dict.fromkeys(systems)))
+    st.table(rows)
+    st.caption(
+        "`compromised` and `compromised_q` are adversarial harnesses: the model is steered to always "
+        "report no change. They should show zero unsafe and a pile of false holds - the gate failing "
+        "closed rather than open."
+    )

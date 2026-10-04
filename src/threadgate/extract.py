@@ -190,8 +190,8 @@ NAME_RUN = re.compile(r"\b(?:[A-Z][A-Za-z&.'\-]*\.?\s+){2,}[A-Z][A-Za-z&.'\-]*\.
 TWO_WORD_NAME = re.compile(r"\bto\s+([A-Z][a-z]+\s+[A-Z][a-z]+)\b")
 CURRENCY = re.compile(r"\b(INR|USD|EUR|GBP|AED|SGD)\b")
 NEGATION = re.compile(
-    r"(not\s+changing|not\s+change|no\s+changes?|we\s+are\s+not|we\s+did\s+not|"
-    r"unchanged|remain[s]?\s|disregard|ignore\s+it)",
+    r"(not\s+changing|not\s+change|no\s+changes?|nothing\s+is\s+changing|"
+    r"we\s+are\s+not|we\s+did\s+not|unchanged|remain[s]?\s|disregard|ignore\s+it)",
     re.IGNORECASE,
 )
 CONFIRM_ASK = re.compile(
@@ -344,6 +344,38 @@ def offline_extract(nt: NormalizedText, vendor: Vendor) -> Extraction:
                     new_value=tok.raw,
                     evidence=_sentence_with(text, tok.start),
                     confidence=0.6,
+                )
+            )
+            break
+
+    # payment terms
+    m_terms = re.search(r"\bNET\s?\d{1,3}\b", text, re.IGNORECASE)
+    if m_terms and m_terms.group(0).upper().replace(" ", "") != (
+        (vendor.current("payment_terms") or "").upper().replace(" ", "")
+    ):
+        claims.append(
+            Claim(
+                field="payment_terms",
+                old_value=vendor.current("payment_terms"),
+                new_value=m_terms.group(0).upper().replace(" ", ""),
+                evidence=_sentence_with(text, m_terms.start()),
+                confidence=0.6,
+            )
+        )
+
+    # contact phone
+    for tok in tokens:
+        if tok.kind != "phone":
+            continue
+        rec_phone = re.sub(r"\D", "", vendor.current("contact_phone") or "")
+        if tok.normalized and tok.normalized != rec_phone:
+            claims.append(
+                Claim(
+                    field="contact_phone",
+                    old_value=vendor.current("contact_phone"),
+                    new_value=tok.raw.strip(),
+                    evidence=_sentence_with(text, tok.start),
+                    confidence=0.5,
                 )
             )
             break

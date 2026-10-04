@@ -95,10 +95,18 @@ below, both are reproducible with one command.
 
 ## Evaluation
 
-20 frozen cases (`data/cases/frozen_v1.json`), labelled with the decision a
+**40 frozen cases** (`data/cases/frozen_v2.json`), labelled with the decision a
 competent payments controller would reach from the email plus the vendor
-record. Five groups: 6 true changes, 5 no-change/negation traps, 3 benign
-changes, 5 adversarial, 1 token-less request.
+record. Composition: 11 true changes, 9 no-change/mention traps, 6 benign
+changes, 11 adversarial, 2 token-less requests, 1 forwarded-attack.
+
+The set was written in two tranches. The first 20 were written alongside the
+system, which is a weakness, so the second 20 were written afterwards from
+attack patterns and from the failure modes I could already see in my own design
+— soft-hyphen splitting, fullwidth digits, a Cyrillic look-alike in the word
+"account", an injection hidden in a signature block, a new account placed in an
+image while the text shows the account already on file. `frozen_v1.json` is
+kept untouched so the difference is auditable.
 
 Two error types are counted separately, because they cost different things:
 
@@ -109,13 +117,18 @@ Two error types are counted separately, because they cost different things:
 
 | System | Accuracy | Unsafe | Safety | False holds |
 | --- | --- | --- | --- | --- |
-| Rules-only baseline (raw text) | 50.0% | 2 | 83.3% | 7 |
-| Rules-only baseline + normalisation | 60.0% | 0 | 100% | 7 |
+| Rules-only baseline (raw text) | 55.0% | 4 | 84.0% | 12 |
+| Rules-only baseline + normalisation | 65.0% | 0 | 100% | 12 |
 | **ThreadGate (Gemini)** | *pending — see below* | | | |
-| ThreadGate, model steered to say "no change" | 65.0% | **0** | 100% | 6 |
-| ThreadGate, steered model forging a verbatim quote | 65.0% | **0** | 100% | 6 |
+| ThreadGate, model steered to say "no change" | 70.0% | **0** | 100% | 10 |
+| ThreadGate, steered model forging a verbatim quote | 70.0% | **0** | 100% | 10 |
 
-Reproduce: `python eval/run_eval.py --systems rules_raw rules_norm gemini compromised compromised_q`
+Reproduce:
+
+```bash
+python eval/run_eval.py --cases data/cases/frozen_v2.json \
+    --systems rules_raw rules_norm gemini compromised compromised_q
+```
 
 **The baseline is not a strawman.** It is two rules: flag an 11–18 digit number
 that is not on file, and flag change language co-occurring with a payment noun.
@@ -142,10 +155,11 @@ claimed.
 
 Read this part.
 
-- **20 cases is a demo, not an evaluation.** It is a set I designed, so a high
-  score on it measures my ability to anticipate my own system. It will be
-  expanded to ~40 with cases written from attack patterns rather than from my
-  design, and the numbers re-run.
+- **40 cases is a demo, not an evaluation.** It is a set I designed, and half of
+  it was written with the system already in front of me, so a high score on it
+  partly measures my ability to anticipate my own system. It is enough to show
+  the mechanism and to catch regressions. It is not evidence of a field error
+  rate, and none is claimed.
 - **The floor only covers the loss event.** I1 catches an unrecognised account
   number. Risk that lives in other fields — a beneficiary rename, a currency
   switch, a token-less request — is caught by the model's reading, and a steered
@@ -165,13 +179,14 @@ Read this part.
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # go/no-go checks; read this before trusting anything
-python -m pytest            # 47 tests, no network needed
-python eval/run_eval.py --systems rules_raw rules_norm offline
+python -m pytest            # 54 tests, no network needed
+python eval/run_eval.py --cases data/cases/frozen_v2.json --systems rules_raw rules_norm offline
 streamlit run app/streamlit_app.py
 ```
 
 Deployed: the key is read from Streamlit secrets (or `.env` locally) and is
-never written to the repo, logs, or the UI.
+never written to the repo, logs, or the UI. See `docs/DEPLOY.md` for the
+Streamlit Community Cloud steps.
 
 ## Layout
 

@@ -37,6 +37,29 @@ _SPACE = {
     "\t", "\r",
 }
 
+# Cyrillic characters that are visually identical to Latin ones, folded so that
+# "Аccount" (Cyrillic А) does not slip past a keyword rule. Only look-alikes
+# that survive a side-by-side glance are folded; this is not a general
+# Unicode-confusable detector.
+_CONFUSABLE = {
+    "\u0410": "A", "\u0430": "a",  # А а
+    "\u0412": "B", "\u0432": "b",  # В в (b is not a perfect match, kept for coverage)
+    "\u0415": "E", "\u0435": "e",  # Е е
+    "\u041a": "K", "\u043a": "k",  # К к
+    "\u041c": "M", "\u043c": "m",  # М м
+    "\u041d": "H", "\u043d": "h",  # Н н -> H
+    "\u041e": "O", "\u043e": "o",  # О о
+    "\u0420": "P", "\u0440": "p",  # Р р
+    "\u0421": "C", "\u0441": "c",  # С с
+    "\u0422": "T", "\u0442": "t",  # Т т
+    "\u0423": "Y", "\u0443": "y",  # У у
+    "\u0425": "X", "\u0445": "x",  # Х х
+    "\u0456": "i", "\u0406": "I",  # і І
+    "\u0455": "s", "\u0405": "S",  # ѕ Ѕ
+    "\u04bb": "h", "\u04bb": "h",  # һ
+    "\u0501": "d", "\u0501": "d",  # ԁ
+}
+
 # Homoglyph digits folded to ASCII.
 _DIGIT_FOLD = {}
 for _i in range(10):

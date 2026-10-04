@@ -104,6 +104,22 @@ def decide(
         )
         reasons.append("medium_risk_field_change:" + ",".join(sorted({d.field for d in medium})))
 
+    ceiling = vendor.typical_max_amount()
+    over_ceiling = [
+        d for d in diffs if d.amount_value is not None and ceiling and d.amount_value > ceiling
+    ]
+    if over_ceiling:
+        findings.append(
+            Finding(
+                code="P_AMOUNT_ABOVE_CEILING",
+                severity="hold",
+                message="Value above this vendor's typical ceiling ("
+                + f"{ceiling:,.0f}): "
+                + ", ".join(f"{d.amount_value:,.0f}" for d in over_ceiling),
+            )
+        )
+        reasons.append("amount_above_typical_ceiling")
+
     if floor:
         reasons.append("unknown_account_token")
 
@@ -153,7 +169,7 @@ def decide(
     for f in floor:
         reasons.append("I1_UNKNOWN_ACCOUNT_TOKEN")
 
-    if high or medium or floor or unverifiable:
+    if high or medium or floor or unverifiable or over_ceiling:
         decision = "HOLD"
     elif low:
         decision = "ALLOW"

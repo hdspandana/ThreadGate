@@ -71,7 +71,8 @@ def account_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
 NO_CHANGE_MARKER = re.compile(
     r"(\bnot\b|\bn't\b|\bno\s+changes?\b|\bno\s+new\b|\bnever\b|unchanged|\bremains?\b|"
     r"\bdisregard\b|\bignore\b|\bno\s+action\b|\bas\s+usual\b|\bstands?\b|\bthe\s+same\b|"
-    r"\bdid\s+not\b|\bdo\s+not\b|\bdoes\s+not\b|\bthere\s+are\s+no\b|\bwas\s+a\s+phish)",
+    r"\bdid\s+not\b|\bdo\s+not\b|\bdoes\s+not\b|\bhave\s+not\s+changed\b|"
+    r"\bnothing\s+(?:is\s+|has\s+|will\s+)?chang|\bthere\s+are\s+no\b|\bwas\s+a\s+phish)",
     re.IGNORECASE,
 )
 
