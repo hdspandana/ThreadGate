@@ -1,0 +1,68 @@
+{
+  "schema": "threadgate.vendor_record/v1",
+  "note": "Synthetic data. Fabricated for this demo; no real vendor, bank or account is represented.",
+  "vendors": {
+    "V-1001": {
+      "vendor_id": "V-1001",
+      "legal_name": "Northwind Logistics Pvt Ltd",
+      "display_name": "Northwind Logistics",
+      "bank": {
+        "account_number": "50100234554455",
+        "ifsc": "HDFC0001234",
+        "swift": "HDFCINBBXXX",
+        "bank_name": "HDFC Bank Ltd",
+        "branch": "Whitefield, Bengaluru",
+        "beneficiary_name": "Northwind Logistics Pvt Ltd",
+        "account_type": "current",
+        "country": "IN"
+      },
+      "verified_domains": ["northwind.example"],
+      "verified_contacts": {
+        "remittance_email": "ar@northwind.example",
+        "contact_person": "Meera Iyer",
+        "contact_phone": "+91 80 2210 4408"
+      },
+      "allowlisted_accounts": [
+        {
+          "account_number": "50100234558812",
+          "ifsc": "HDFC0001234",
+          "beneficiary_name": "Northwind Logistics Pvt Ltd",
+          "note": "Alternate collections account, pre-registered 2025-07-02",
+          "registered_at": "2025-07-02"
+        }
+      ],
+      "payment_defaults": {
+        "currency": "INR",
+        "payment_terms": "NET45",
+        "typical_max_amount": 500000
+      }
+    },
+    "V-1002": {
+      "vendor_id": "V-1002",
+      "legal_name": "Kaveri Freight Solutions LLP",
+      "display_name": "Kaveri Freight",
+      "bank": {
+        "account_number": "318020110009912",
+        "ifsc": "ICIC0004417",
+        "swift": "ICICINBBCTS",
+        "bank_name": "ICICI Bank Ltd",
+        "branch": "Peenya, Bengaluru",
+        "beneficiary_name": "Kaveri Freight Solutions LLP",
+        "account_type": "current",
+        "country": "IN"
+      },
+      "verified_domains": ["kaverifreight.example"],
+      "verified_contacts": {
+        "remittance_email": "billing@kaverifreight.example",
+        "contact_person": "Anil Rao",
+        "contact_phone": "+91 80 2330 1188"
+      },
+      "allowlisted_accounts": [],
+      "payment_defaults": {
+        "currency": "INR",
+        "payment_terms": "NET30",
+        "typical_max_amount": 250000
+      }
+    }
+  }
+}
