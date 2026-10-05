@@ -30,7 +30,7 @@ def test_every_case_is_well_formed(name):
     for c in data["cases"]:
         missing = REQUIRED - set(c)
         assert not missing, f"{c.get('id')}: missing {missing}"
-        assert c["expected_decision"] in {"HOLD", "ALLOW", "NO_CHANGE"}
+        assert c["expected_decision"] in {"HOLD", "REVIEW", "CLEAR"}
         assert set(c["email"]) >= {"from", "reply_to", "subject", "body"}
         assert c["email"]["body"].strip()
 
@@ -46,7 +46,7 @@ def test_v2_has_all_three_decisions_represented():
     from collections import Counter
 
     counts = Counter(c["expected_decision"] for c in _load("frozen_v2.json")["cases"])
-    assert counts["HOLD"] >= 20 and counts["NO_CHANGE"] >= 5 and counts["ALLOW"] >= 3
+    assert counts["HOLD"] >= 20 and counts["CLEAR"] >= 5 and counts["REVIEW"] >= 3
 
 
 @pytest.mark.parametrize("name", ["frozen_v1.json", "frozen_v2.json"])

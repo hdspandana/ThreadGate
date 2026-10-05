@@ -48,7 +48,8 @@ def test_a_hold_trigger_can_never_produce_a_clear(case_by_id_all, vendors, extra
                 f"{case['id']} had hold findings {[f.code for f in holding]} "
                 f"but decided {r.decision.decision}"
             )
-        if r.decision.decision == "ALLOW":
+        # The test name promises CLEAR specifically, so check CLEAR.
+        if r.decision.decision == "CLEAR":
             assert not holding, f"{case['id']} cleared with hold findings present"
 
 
@@ -121,7 +122,7 @@ def test_a_forged_verbatim_quote_cannot_justify_no_change(case_by_id_all, vendor
     for cid in ("TG-001", "TG-015", "TG-020", "TG-034"):
         r = run_case(case_by_id_all[cid], vendors, extractor_fn=compromised_quote_extract)
         assert r.decision.decision == "HOLD", cid
-        assert any(f.code == "I2B_NO_CHANGE_NOT_JUSTIFIED" for f in r.decision.findings), cid
+        assert any(f.code == "I2B_NO_CHANGE_INTENT_NOT_JUSTIFIED" for f in r.decision.findings), cid
 
 
 # --- what is and is not implemented ---------------------------------------

@@ -7,13 +7,13 @@ to be a fair stand-in for a first-pass control, not a strawman:
       are not the account on file and not a pre-registered alternate -> HOLD
   R2  a change-ish verb anywhere in the text AND a payment noun anywhere in the
       text -> HOLD
-  else NO_CHANGE
+  else CLEAR
 
 Two properties are worth stating out loud because they are the point of the
 comparison:
 
-  * It can never return ALLOW. A rules engine of this shape has no way to say
-    "this change is one we already approved", so every true change costs a
+  * It can never return REVIEW. A rules engine of this shape has no way to say
+    "this change is one we already have on file", so every true change costs a
     manual review even when it is legitimate.
   * R2 is a bag of words. It cannot read negation, so "we are not changing our
     bank details" and "please change our bank details" are the same string to it.
@@ -66,7 +66,7 @@ def rules_only(case: dict, vendor: Vendor, normalized: bool = False) -> Decision
             attestation_required=True,
         )
 
-    return Decision(decision="NO_CHANGE", reasons=["rule:no_trigger"])
+    return Decision(decision="CLEAR", reasons=["rule:no_trigger"])
 
 
 def rules_only_normalized(case: dict, vendor: Vendor) -> Decision:

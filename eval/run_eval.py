@@ -138,7 +138,11 @@ def run_system(system: str, cases: list[dict], vendors: dict) -> list[PipelineRe
             error = None
             try:
                 verdict, reason = ai_only_decide(nt, vendor)
-                mapping = {"CLEAR": "ALLOW", "HOLD": "HOLD", "NO_CHANGE": "NO_CHANGE"}
+                # Identity mapping: the AI-only baseline is asked the question
+                # in the final decision vocabulary, so the comparison against
+                # ThreadGate is apples-to-apples. Anything unrecognised falls
+                # through to HOLD.
+                mapping = {"CLEAR": "CLEAR", "REVIEW": "REVIEW", "HOLD": "HOLD"}
                 decision = Decision(
                     decision=mapping.get(verdict, "HOLD"),
                     reasons=[f"ai_only:{verdict}"],

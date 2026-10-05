@@ -55,10 +55,10 @@ def test_an_amount_alone_never_produces_a_hold(case_by_id_all, vendors):
     A payment reminder quoting a value is not a request to change anything, and
     a large value is not a risk signal this gate is allowed to act on.
     """
-    case = case_by_id_all["TG-028"]  # an overdue-invoice chaser, expects NO_CHANGE
+    case = case_by_id_all["TG-028"]  # an overdue-invoice chaser, expects CLEAR
     r = run_case(case, vendors, extractor_fn=_amount_only_extractor)
     assert r.validation.verified_claims, "the amount claim should be admissible here"
-    assert r.decision.decision == "NO_CHANGE", r.decision.reasons
+    assert r.decision.decision == "CLEAR", r.decision.reasons
     assert not any("amount" in reason for reason in r.decision.reasons)
 
 
@@ -93,10 +93,10 @@ def test_destination_code_floor_does_not_ask_the_model(case_by_id_all, vendors):
     assert all(f.independent_of_model for f in r.decision.findings if f.code.startswith("I1"))
 
 
-def test_known_branch_code_does_not_break_a_pre_registered_allow(case_by_id_all, vendors):
-    """The floor must not eat the legitimate ALLOW path."""
+def test_known_branch_code_does_not_break_a_pre_registered_review(case_by_id_all, vendors):
+    """The floor must not eat the legitimate REVIEW path."""
     r = run_case(case_by_id_all["TG-012"], vendors, extractor_fn=offline_extract)
-    assert r.decision.decision == "ALLOW"
+    assert r.decision.decision == "REVIEW"
     assert not any(f.code.startswith("I1") for f in r.decision.findings)
 
 
@@ -133,7 +133,7 @@ def test_no_unsafe_outcomes_anywhere(vendors):
             for case in cases:
                 r: PipelineResult = run_case(case, vendors, extractor_fn=attack)
                 assert not r.unsafe, f"{name} {case['id']} released a hold under {attack.__name__}"
-                assert r.decision.decision != "ALLOW"
+                assert r.decision.decision != "REVIEW"
 
 
 def test_every_case_has_a_category():

@@ -1,17 +1,19 @@
 """The policy engine: a monotone, deterministic decision rule.
 
 The rule is deliberately one-directional. Triggers can only move a request
-towards HOLD; none of them can move it towards ALLOW. The model's contribution
+towards HOLD; none of them can move it towards CLEAR. The model's contribution
 enters as *verified claims*, and a verified claim can add a HOLD trigger but can
 never remove one. That is the whole security argument, and it is why the
-compromised-model harness degrades to "hold everything" instead of "allow
+compromised-model harness degrades to "hold everything" instead of "clear
 everything".
 
 Decision surface:
 
-    HOLD       - cannot execute without out-of-band human verification
-    ALLOW      - verified as pre-registered or low risk, safe to execute
-    NO_CHANGE  - the email asks for nothing; there is nothing to gate
+    HOLD    - cannot execute without out-of-band human verification
+    REVIEW  - a change was identified and it matches the record on file;
+              a human still attests before anything executes
+    CLEAR   - no change was identified by this prototype; nothing to gate.
+              This is not a statement that the email is safe or approved.
 """
 
 from __future__ import annotations
@@ -167,7 +169,7 @@ def decide(
                     # not have when there is no change language and no unknown
                     # destination, and a finding that claims a hold that did not
                     # happen is worse than no finding at all.
-                    code="I2B_NO_CHANGE_NOT_JUSTIFIED",
+                    code="I2B_NO_CHANGE_INTENT_NOT_JUSTIFIED",
                     severity="info",
                     message=(
                         "The model reports no change, but the sentence it quoted does not say "
@@ -205,10 +207,10 @@ def decide(
         if out_of_band:
             reasons.append("destination_out_of_band")
     elif low:
-        decision = "ALLOW"
+        decision = "REVIEW"
         reasons.append("verified_low_risk_change:" + ",".join(sorted({d.field for d in low})))
     else:
-        decision = "NO_CHANGE"
+        decision = "CLEAR"
         reasons.append("no_change_evidenced" if no_change_accepted else "nothing_to_gate")
 
     return Decision(
@@ -216,7 +218,10 @@ def decide(
         reasons=list(dict.fromkeys(reasons)),
         diffs=diffs,
         findings=findings,
-        attestation_required=(decision == "HOLD"),
+        # Anything that is not CLEAR still needs a human to attest before the
+        # change executes. Only HOLD additionally carries the out-of-band
+        # callback checklist.
+        attestation_required=(decision != "CLEAR"),
         checklist=_checklist(vendor, diffs, floor, unverifiable, bool(out_of_band))
         if decision == "HOLD"
         else [],

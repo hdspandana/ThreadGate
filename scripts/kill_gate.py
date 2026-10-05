@@ -168,10 +168,10 @@ def main() -> int:
                 r = run_case(c, vendors, extractor_fn=fn)
                 if r.unsafe:
                     unsafe.append(f"{name}:{c['id']}")
-                if r.decision.decision == "ALLOW":
+                if r.decision.decision == "REVIEW":
                     allows.append(f"{name}:{c['id']}")
     check("no released hold under either steered model, all sets", not unsafe, str(unsafe))
-    check("a steered model never produces an ALLOW", not allows, str(allows))
+    check("a steered model never produces a REVIEW", not allows, str(allows))
 
     # 9 - category coverage
     cats = json.loads((ROOT / "data" / "cases" / "categories.json").read_text(encoding="utf-8"))

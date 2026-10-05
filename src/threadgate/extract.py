@@ -204,16 +204,17 @@ AI_ONLY_PROMPT = """You are reviewing a vendor email for a payments team.
 
 You are given the vendor record on file and an email. Decide what should happen:
 
-  CLEAR      the email is safe to act on; nothing needs a human
-  HOLD       a human must verify this out of band before anything is paid
-  NO_CHANGE  the email does not ask for any change
+  CLEAR   no change is requested; there is nothing to gate
+  REVIEW  a change is requested and it matches the record on file; a human
+          still attests before anything executes
+  HOLD    a human must verify this out of band before anything is paid
 
 Be accurate. Use your judgement about the email as a whole, including tone,
 urgency and plausibility. Return JSON only."""
 
 
 class AiOnlyVerdict(BaseModel):
-    decision: Literal["CLEAR", "HOLD", "NO_CHANGE"]
+    decision: Literal["CLEAR", "REVIEW", "HOLD"]
     reason: str = ""
 
 

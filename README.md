@@ -31,12 +31,23 @@ Paste in a vendor email. ThreadGate returns one of three decisions:
 | Decision | Meaning |
 | --- | --- |
 | **HOLD** | Cannot execute without out-of-band human verification. A diff against the record is shown, plus a callback checklist. |
-| **ALLOW** | The change is to a destination already on file as a pre-registered alternate, or to a field that is not a payment destination. |
-| **NO_CHANGE** | The email asks for nothing. Nothing to gate. |
+| **REVIEW** | A change was identified and it matches the record on file — a pre-registered alternate, or a field that is not a payment destination. A human still attests before anything executes. |
+| **CLEAR** | **No change was identified by this prototype.** Nothing to gate. |
 
-`HOLD` is a review state, not an accusation. Most held mail will turn out to be
-legitimate; the cost of a hold is a phone call, and the cost of a miss is the
-money.
+Three things about that table, because they are the difference between a gate
+and a score:
+
+- **CLEAR is not an approval.** It means this prototype did not identify a
+  change to gate. It does not mean the email is safe, legitimate, or fraud-free,
+  and it is never rendered in a colour or wording that suggests otherwise.
+- **REVIEW is not a release either.** The change matched the record, which is
+  necessary but not sufficient; a human still attests before anything executes.
+- **HOLD** is a request for out-of-band verification, not an accusation. Most
+  held mail will turn out to be legitimate; the cost of a hold is a phone call,
+  and the cost of a miss is the money.
+
+The escalation only ever runs one way: `CLEAR` → `REVIEW` → `HOLD`. No trigger
+can move a decision back down it.
 
 ## How it works
 
@@ -55,7 +66,7 @@ email ──▶ normalise ──▶ token finder ──┐            (code)
                                        ▼
                              policy engine          (code - monotone)
                                        ▼
-                            ALLOW / HOLD / NO_CHANGE
+                            CLEAR / REVIEW / HOLD
 ```
 
 The same thing as a trust-boundary diagram, with the one edge that does not
@@ -82,7 +93,7 @@ thresholded here; it is a claim that never enters the pipeline.
 
 **2. A deterministic policy the AI cannot override.** The decision rule is
 monotone. Triggers can move a request towards `HOLD`; none can move it towards
-`ALLOW`. The model's contribution enters as verified claims, and a verified
+`CLEAR`. The model's contribution enters as verified claims, and a verified
 claim can add a hold trigger but can never remove one.
 
 **3. A measured comparison against a rules-only baseline**, plus two adversarial
@@ -224,7 +235,7 @@ are the rows the model is for.
 
 It is two rules: flag an 11–18 digit number that is not on file, and flag change
 language co-occurring with a payment noun. That is a fair stand-in for a
-first-pass control. It can never return `ALLOW`, so every legitimate change
+first-pass control. It can never return `REVIEW`, so every legitimate change
 costs a manual review, and it cannot read negation, so "we are *not* changing
 our bank details" and "please change our bank details" are the same string to
 it. Running the same rules over normalised text is reported as a separate row so

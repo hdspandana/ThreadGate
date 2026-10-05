@@ -25,21 +25,21 @@ def test_a_steered_model_cannot_release_a_hold(case_by_id, vendors, cid, attack)
 
 
 @pytest.mark.parametrize("attack", [compromised_extract, compromised_quote_extract])
-def test_steered_model_never_produces_an_allow(case_by_id, vendors, attack):
+def test_steered_model_never_produces_a_review(case_by_id, vendors, attack):
     for cid in case_by_id:
         r = run_case(case_by_id[cid], vendors, extractor_fn=attack)
-        assert r.decision.decision != "ALLOW"
+        assert r.decision.decision != "REVIEW"
 
 
 def test_negation_cases_are_not_held_with_the_offline_double(case_by_id, vendors):
     for cid in ("TG-007", "TG-008", "TG-009", "TG-010", "TG-011"):
         r = run_case(case_by_id[cid], vendors, extractor_fn=offline_extract)
-        assert r.decision.decision == "NO_CHANGE", cid
+        assert r.decision.decision == "CLEAR", cid
 
 
-def test_pre_registered_account_is_allowed(case_by_id, vendors):
+def test_pre_registered_account_is_reviewed(case_by_id, vendors):
     r = run_case(case_by_id["TG-012"], vendors, extractor_fn=offline_extract)
-    assert r.decision.decision == "ALLOW"
+    assert r.decision.decision == "REVIEW"
     assert any(d.pre_registered for d in r.decision.diffs)
 
 

@@ -29,16 +29,19 @@ AI + Cybersecurity
 - Live deployment: `[[FILL: Streamlit Community Cloud URL]]`
 - Screenshots: captured, `docs/screenshots/`. Five real captures of the running
   app, not mockups — each verdict asserted against the live DOM before saving:
-  1. `01_benign_pre_registered_CLEAR.png` — TG-012, a change to an account
-     already on file. Releases it; holding these is pure review cost.
+  1. `01_pre_registered_REVIEW.png` — TG-012, a change to an account already
+     on file. The gate returns REVIEW, not HOLD; holding these is pure review
+     cost.
   2. `02_destination_change_HOLD.png` — TG-001, the 4455 → 9821 diff, with the
      red "not on file" highlight and the callback checklist.
   3. `03_prompt_injection_HOLD.png` — TG-015, where the email instructs the
      assistant to report no change.
-  4. `04_semantic_negation_NO_CHANGE.png` — TG-007, the rules-only baseline
-     holds it and the gate does not.
+  4. `04_negation_CLEAR.png` — TG-007, the rules-only baseline holds it and the
+     gate returns CLEAR.
   5. `05_evaluation_comparison.png` — the corpus table plus the per-category
      breakdown.
+
+  Every shot shows one of exactly three words: **CLEAR / REVIEW / HOLD**.
 - Architecture diagram: `docs/architecture.svg` at the repository root of
   `docs/`. It renders on GitHub and Devpost. `[[FILL: if the form insists on a
   raster upload, export with
@@ -86,7 +89,7 @@ everything downstream of it refuses to trust it:
 ```
 email → normalise → token finder → [Gemini: what change does this ask for?]
       → evidence validator → comparator vs vendor record → invariants → policy
-      → ALLOW / HOLD / NO_CHANGE
+      → CLEAR / REVIEW / HOLD
 ```
 
 1. **Normalisation with offset preservation.** Zero-width spaces, soft hyphens,
@@ -114,8 +117,9 @@ email → normalise → token finder → [Gemini: what change does this ask for?
    - *I4*: if the destination is in an image, PDF or portal, it is unverifiable
      and held — the app does no OCR and never opens attachments.
 7. **Policy engine — monotone.** Triggers can move a request towards `HOLD`;
-   none can move it towards `ALLOW`. A verified claim can add a hold trigger but
-   can never remove one. There is deliberately no risk score: invoice value,
+   none can move it towards `CLEAR`. A verified claim can add a hold trigger but
+   can never remove one. The ladder only ever runs one way:
+   `CLEAR` → `REVIEW` → `HOLD`. There is deliberately no risk score: invoice value,
    vendor age and similar signals are absent by design, because a score can be
    argued with and a destination check cannot.
 
@@ -191,8 +195,8 @@ Structure planned for ~3 minutes:
 2. **0:25–1:10** — the HOLD scenario, evidence highlights, the 4455 ≠ 9821 diff.
 3. **1:10–1:50** — the negation case, with the rules-only column getting it
    wrong.
-4. **1:50–2:30** — the steered model tries to force `NO_CHANGE` and the gate
-   still HOLDs. This is the claim the submission rests on.
+4. **1:50–2:30** — the steered model tries to force `CLEAR` and the gate still
+   HOLDs. This is the claim the submission rests on.
 5. **2:30–2:50** — the image-hidden-account case: no OCR, so it must not clear.
 6. **2:50–3:00** — the evaluation table and the honest-limits box.
 

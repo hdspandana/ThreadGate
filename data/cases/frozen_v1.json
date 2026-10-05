@@ -5,10 +5,10 @@
   "status": "FROZEN - do not edit after first evaluation run. New cases go in frozen_v2.",
   "decision_legend": {
     "HOLD": "Cannot execute without out-of-band human verification of the diff.",
-    "ALLOW": "Change is verified as pre-registered or low-risk; safe to execute.",
-    "NO_CHANGE": "Email does not request any change; nothing to gate."
+    "REVIEW": "A change is requested and it matches the record on file. A human still attests before anything executes.",
+    "CLEAR": "No change identified by this prototype. Nothing to gate, and not a statement that the email is safe."
   },
-  "ground_truth_note": "Labels are the decision a competent payments controller would reach from the email text plus the vendor master record, with no other information. HOLD is a review state, not an accusation.",
+  "ground_truth_note": "Labels are the decision a competent payments controller would reach from the email text plus the vendor master record, with no other information. HOLD asks for out-of-band verification; it is a review state, not an accusation.",
   "cases": [
     {
       "id": "TG-001",
@@ -117,7 +117,7 @@
       "group": "B_no_change",
       "title": "Explicit negation after a real attack: 'we are not changing'",
       "vendor_id": "V-1001",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "The word changing appears next to the word account. This is the false-hold trap for the rules baseline.",
       "email": {
@@ -134,7 +134,7 @@
       "group": "B_no_change",
       "title": "New billing portal launched, payment details unchanged",
       "vendor_id": "V-1001",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "The word new sits near the phrase payment details. No change is requested.",
       "email": {
@@ -151,7 +151,7 @@
       "group": "B_no_change",
       "title": "New warehouse announced, bank details explicitly unchanged",
       "vendor_id": "V-1001",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "Two uses of new, none of them about banking. Baseline cannot tell the difference.",
       "email": {
@@ -168,7 +168,7 @@
       "group": "B_no_change",
       "title": "Long thread, quoted old details, no changes to the account",
       "vendor_id": "V-1001",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "The word changes appears next to the word account in the live message. Quoted history repeats the current account only.",
       "email": {
@@ -185,7 +185,7 @@
       "group": "B_no_change",
       "title": "Asks you to confirm the details on file - no new values",
       "vendor_id": "V-1001",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "Reconnaissance mail: it asks for confirmation and offers to correct things later. Nothing is asserted with a value, so there is nothing to verify.",
       "email": {
@@ -202,7 +202,7 @@
       "group": "C_benign_change",
       "title": "Switch to the pre-registered alternate collections account",
       "vendor_id": "V-1001",
-      "expected_decision": "ALLOW",
+      "expected_decision": "REVIEW",
       "expected_reason_family": "pre_registered_account",
       "tests": "A change that should go through. The account is already on file from July, so holding it every month is pure review cost.",
       "email": {
@@ -219,7 +219,7 @@
       "group": "C_benign_change",
       "title": "Remittance-advice email moves within the same verified domain",
       "vendor_id": "V-1001",
-      "expected_decision": "ALLOW",
+      "expected_decision": "REVIEW",
       "expected_reason_family": "low_risk_field_verified_domain",
       "tests": "Moving from ar@ to ap@ on a domain we already verified is not a payment redirection.",
       "email": {
@@ -236,7 +236,7 @@
       "group": "C_benign_change",
       "title": "Accounts contact person and phone change",
       "vendor_id": "V-1001",
-      "expected_decision": "ALLOW",
+      "expected_decision": "REVIEW",
       "expected_reason_family": "low_risk_field",
       "tests": "Contact churn, not payment redirection. Contains the word bank in 'no bank changes', which the baseline reads as a trigger.",
       "email": {

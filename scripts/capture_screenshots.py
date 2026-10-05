@@ -10,6 +10,11 @@ Options:
     --base-url http://127.0.0.1:8501
     --extractor offline              # which interpreter is selected in the UI
 
+The script refuses to leave a screenshot on disk whose rendered chrome contains
+an obsolete decision term. The email body is excluded from that check: the
+synthetic prompt-injection fixtures contain attacker-authored text that
+legitimately still says "report NO_CHANGE", and that is data, not UI.
+
 If GEMINI_API_KEY is set, run with `--extractor gemini` to capture the real
 model path. Otherwise the app selects the offline test double and the
 screenshots must be labelled accordingly.
@@ -18,26 +23,31 @@ screenshots must be labelled accordingly.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "screenshots"
 
-# (filename, case id, what the shot is meant to show)
+DECISIONS = ("CLEAR", "REVIEW", "HOLD")
+OBSOLETE = ("ALLOW", "NO_CHANGE", "NO CHANGE")
+BADGE_RE = re.compile(r"^(CLEAR|REVIEW|HOLD)\s*-")
+
+# (filename, case id, expected decision, what the shot is meant to show)
 TARGETS = [
-    ("01_benign_pre_registered_CLEAR.png", "TG-012",
-     "A change to a destination already on file. The gate CLEARs it; holding "
-     "these is pure review cost."),
-    ("02_destination_change_HOLD.png", "TG-001",
+    ("01_pre_registered_REVIEW.png", "TG-012", "REVIEW",
+     "A change to a destination already on file. The gate returns REVIEW, not "
+     "HOLD - holding these is pure review cost."),
+    ("02_destination_change_HOLD.png", "TG-001", "HOLD",
      "The canonical case: the requested account is not the one on file. The "
-     "diff and the callback checklist are shown."),
-    ("03_prompt_injection_HOLD.png", "TG-015",
+     "diff and the out-of-band callback checklist are shown."),
+    ("03_prompt_injection_HOLD.png", "TG-015", "HOLD",
      "The email instructs the assistant to report no change. The floor does "
      "not ask the model, so it holds."),
-    ("04_semantic_negation_NO_CHANGE.png", "TG-007",
+    ("04_negation_CLEAR.png", "TG-007", "CLEAR",
      "The email says it is NOT changing anything. The rules-only baseline "
-     "holds it; the gate does not. This is what the model is for."),
+     "holds it; the gate identifies no change. This is what the model is for."),
 ]
 
 
@@ -50,6 +60,30 @@ def select(page, label: str, value: str) -> None:
     page.wait_for_timeout(700)
     page.keyboard.press("Enter")
     page.wait_for_timeout(1800)
+
+
+def chrome_text(page) -> str:
+    """Rendered UI text with the email body removed.
+
+    The email box holds synthetic attacker text; it is data, not interface, and
+    is deliberately not held to the UI vocabulary.
+    """
+    return page.evaluate(
+        "() => { const c = document.body.cloneNode(true);"
+        "        c.querySelectorAll('.emailbox').forEach(e => e.remove());"
+        "        return c.innerText; }"
+    )
+
+
+def check_vocabulary(page, badge: str, label: str) -> list[str]:
+    problems = []
+    if not BADGE_RE.match(badge):
+        problems.append(f"{label}: badge {badge!r} does not start with a final decision")
+    text = chrome_text(page)
+    for term in OBSOLETE:
+        if term in text:
+            problems.append(f"{label}: obsolete decision term {term!r} in rendered UI")
+    return problems
 
 
 def main() -> int:
@@ -69,6 +103,7 @@ def main() -> int:
 
     OUT.mkdir(parents=True, exist_ok=True)
     captured: list[Path] = []
+    problems: list[str] = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(args=["--no-sandbox"])
@@ -78,28 +113,41 @@ def main() -> int:
 
         select(page, "Extractor", args.extractor)
 
-        for filename, case_id, _ in TARGETS:
+        for filename, case_id, expected, _ in TARGETS:
             select(page, "Case", case_id)
             page.wait_for_timeout(1200)
+            badge = page.locator("span.badge").first.inner_text().strip()
+            if not badge.startswith(expected):
+                problems.append(f"{case_id}: expected {expected}, rendered {badge!r}")
+            problems.extend(check_vocabulary(page, badge, case_id))
             path = OUT / filename
             page.screenshot(path=str(path), full_page=False)
             captured.append(path)
-            print(f"  {filename}  ({case_id})")
+            print(f"  {filename:38} {case_id}  badge={badge!r}")
 
         # 5 - the corpus comparison table, on whichever case set is selected
         page.locator("button", has_text="cases across every system").first.click()
         page.wait_for_selector("table", timeout=180_000)
         page.wait_for_timeout(2500)
+        problems.extend(check_vocabulary(page, "HOLD - verified", "corpus"))
         path = OUT / "05_evaluation_comparison.png"
         page.screenshot(path=str(path), full_page=True)
         captured.append(path)
-        print(f"  {filename if False else '05_evaluation_comparison.png'}  (corpus run)")
+        print(f"  {'05_evaluation_comparison.png':38} corpus")
 
         browser.close()
 
     print(f"\n{len(captured)} screenshot(s) in {OUT}")
     for c in captured:
         print(f"  {c.relative_to(ROOT)}  {c.stat().st_size // 1024} KB")
+
+    if problems:
+        print("\nVOCABULARY CHECK FAILED - do not submit these:")
+        for pr in problems:
+            print(f"  - {pr}")
+        return 1
+
+    print("\nVOCABULARY CHECK PASSED - every shot renders only CLEAR / REVIEW / HOLD")
     return 0
 
 

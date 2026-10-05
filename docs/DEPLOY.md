@@ -27,10 +27,24 @@ stored as a secret rather than in the repo.
    `API key: configured (ends ...xxxx)`.
 5. `requirements.txt` is at the repository root, which Community Cloud picks up
    automatically. No `packages.txt` is needed — there are no apt dependencies.
+   The app installs nothing at runtime and writes nothing to disk.
+
+### How the key reaches the model
+
+Community Cloud keeps secrets in `st.secrets` and does **not** inject them into
+`os.environ`. The extractor reads `os.environ`. `export_key_to_environment()` in
+`app/streamlit_app.py` bridges the two: it copies the secret into this process's
+environment at startup, and never logs or displays it.
+
+Without that bridge the failure is quiet and misleading — the sidebar would say
+`API key: configured` while every case failed closed to HOLD with empty model
+rows. If you ever see a configured key alongside `extractor_failed_fail_closed`,
+this bridge is what to check.
 
 ## Verifying the deployment
 
 - Sidebar shows `API key: configured`.
+- The app never shows the key itself, only its last four characters.
 - Pick `TG-001` → **HOLD**, with `50100234559821` highlighted red and the
   record account `****4455` shown in the diff.
 - Switch the extractor to `compromised_quote` → `TG-001` still **HOLD**. This is
@@ -55,6 +69,10 @@ The app still runs. `api_key()` returns `None`, the sidebar warns, and the
 pipeline fails **closed**: an extractor error produces `HOLD` with reason
 `extractor_failed_fail_closed`. A missing model must never look like a safe
 email.
+
+Every case additionally returns `HOLD` rather than `CLEAR`, so a broken
+deployment is loud — the whole corpus goes red — instead of quietly releasing
+changes it never verified.
 
 ## Local equivalent
 

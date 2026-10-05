@@ -46,10 +46,13 @@ try:
 except ImportError:  # pragma: no cover
     pass
 
+# Colours are chosen so that nothing reads as "approved". There is deliberately
+# no green: CLEAR means "no change was identified by this prototype", which is
+# not a statement that the email is safe, and it must not look like one.
 BADGE = {
-    "HOLD": ("#c1121f", "HOLD - needs a human"),
-    "ALLOW": ("#1b7f4f", "ALLOW - verified change"),
-    "NO_CHANGE": ("#37507a", "NO CHANGE - nothing to gate"),
+    "HOLD": ("#c1121f", "HOLD - verify out of band before anything executes"),
+    "REVIEW": ("#8a5a00", "REVIEW - change matches the record; a human still attests"),
+    "CLEAR": ("#37507a", "CLEAR - no change identified by this prototype"),
 }
 
 CSS = """
@@ -91,6 +94,21 @@ def key_status() -> tuple[bool, str]:
     if not k:
         return False, "not configured"
     return True, f"configured (ends ...{k[-4:]})"
+
+
+def export_key_to_environment() -> None:
+    """Make a Streamlit secret visible to the pipeline.
+
+    Community Cloud keeps secrets in `st.secrets` and does not inject them into
+    `os.environ`, but the extractor reads `os.environ`. Without this, a
+    deployment with the key correctly configured would still raise
+    ExtractorError on every case - failing closed to HOLD, with empty model rows
+    - while the sidebar cheerfully reported "configured". The key is only ever
+    copied into this process's environment; it is never logged or displayed.
+    """
+    k = api_key()
+    if k and not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
+        os.environ["GEMINI_API_KEY"] = k
 
 
 # ---------------------------------------------------------------------------
@@ -229,6 +247,7 @@ st.set_page_config(page_title="ThreadGate", page_icon="\U0001f6aa", layout="wide
 st.markdown(CSS, unsafe_allow_html=True)
 
 VENDORS = load_vendors(ROOT / "data" / "records" / "vendor_master.json")
+export_key_to_environment()
 
 st.title("ThreadGate")
 st.markdown(

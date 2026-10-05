@@ -57,7 +57,20 @@ class Extraction(BaseModel):
 # Pipeline types (produced by code, never by the model)
 # --------------------------------------------------------------------------
 
-DECISIONS = Literal["ALLOW", "HOLD", "NO_CHANGE"]
+# The final decision vocabulary. Three states, and the escalation ladder is
+# CLEAR < REVIEW < HOLD: triggers may only move a request towards HOLD.
+#
+# CLEAR  means "no change was identified by this prototype". It is NOT a
+#        statement that the email is safe, approved, or fraud-free. Nothing in
+#        the codebase may render it as one.
+# REVIEW means a change was identified and it matches the record on file. It
+#        still requires a human to attest before anything executes.
+# HOLD   means the change cannot be executed without out-of-band human
+#        verification.
+#
+# `no_change` remains in INTENTS above, but that is model-facing: it describes
+# what the *email* asks for, not what the gate decides.
+DECISIONS = Literal["CLEAR", "REVIEW", "HOLD"]
 
 
 class FieldDiff(BaseModel):

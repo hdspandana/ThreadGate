@@ -150,7 +150,10 @@ def out_of_band_destination(norm_text: str) -> list[Finding]:
     return []
 
 
-NO_CHANGE_MARKER = re.compile(
+# Matches words in the *email*, not a decision of the gate. The decision
+# vocabulary is CLEAR / REVIEW / HOLD; `no_change` here is the model's
+# description of what the email asks for.
+NO_CHANGE_PHRASE = re.compile(
     r"(\bnot\b|\bn't\b|\bno\s+changes?\b|\bno\s+new\b|\bnever\b|unchanged|\bremains?\b|"
     r"\bdisregard\b|\bignore\b|\bno\s+action\b|\bas\s+usual\b|\bstands?\b|\bthe\s+same\b|"
     r"\bdid\s+not\b|\bdo\s+not\b|\bdoes\s+not\b|\bhave\s+not\s+changed\b|"
@@ -172,7 +175,7 @@ def no_change_justified(quote: str) -> bool:
     change, or merely talks about banking, does not support a claim that nothing
     is changing, however verbatim it is.
     """
-    return bool(NO_CHANGE_MARKER.search(quote or ""))
+    return bool(NO_CHANGE_PHRASE.search(quote or ""))
 
 
 def change_act_detected(norm_text: str) -> bool:

@@ -91,7 +91,7 @@
       "group": "B_no_change",
       "title": "Internal process update about how changes get verified",
       "vendor_id": "V-1001",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "Talks about changing bank details without changing anything. Every keyword fires; the intent is the opposite.",
       "email": {
@@ -110,7 +110,7 @@
       "vendor_id": "V-1001",
       "expected_decision": "HOLD",
       "expected_reason_family": "unknown_account_token",
-      "tests": "No change is requested and the vendor is the victim, but an unknown account number is in the text. The right answer is still HOLD: someone must confirm nobody already acted on it. This is the case that shows HOLD is a review state, not an accusation.",
+      "tests": "No change is requested and the vendor is the victim, but an unknown account number is in the text. The right answer is still HOLD: someone must confirm nobody already acted on it. This is the case that shows HOLD asks for out-of-band verification; it is a review state, not an accusation.",
       "email": {
         "from": "Meera Iyer <meera.iyer@northwind.example>",
         "reply_to": "meera.iyer@northwind.example",
@@ -125,7 +125,7 @@
       "group": "B_no_change",
       "title": "Overdue-invoice chaser quoting the existing account",
       "vendor_id": "V-1001",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "Asks for payment, not for a change. The phrase 'update your records' is about the same values.",
       "email": {
@@ -142,7 +142,7 @@
       "group": "B_no_change",
       "title": "A second vendor confirms the details already on their own record",
       "vendor_id": "V-1002",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "Multi-vendor: the account number is unknown to V-1001 but is the current account of V-1002. A comparison run against the wrong record produces a false hold.",
       "email": {
@@ -159,7 +159,7 @@
       "group": "B_no_change",
       "title": "Automated bank credit alert mentioning the account",
       "vendor_id": "V-1001",
-      "expected_decision": "NO_CHANGE",
+      "expected_decision": "CLEAR",
       "expected_reason_family": "no_change_evidenced",
       "tests": "A machine-generated message that contains an account number and the word payment. Nothing is requested.",
       "email": {
@@ -176,7 +176,7 @@
       "group": "C_benign_change",
       "title": "Payment terms move from NET45 to NET30",
       "vendor_id": "V-1001",
-      "expected_decision": "ALLOW",
+      "expected_decision": "REVIEW",
       "expected_reason_family": "low_risk_field",
       "tests": "A commercial change, not a redirection. Holding it every time teaches reviewers to click through holds.",
       "email": {
@@ -193,7 +193,7 @@
       "group": "C_benign_change",
       "title": "Switch to the pre-registered alternate, different phrasing",
       "vendor_id": "V-1001",
-      "expected_decision": "ALLOW",
+      "expected_decision": "REVIEW",
       "expected_reason_family": "pre_registered_account",
       "tests": "Same allowlist path as TG-012, no shared wording, so a pattern-matching system cannot just memorise the sentence.",
       "email": {
@@ -210,7 +210,7 @@
       "group": "C_benign_change",
       "title": "Accounts-team phone number change only",
       "vendor_id": "V-1001",
-      "expected_decision": "ALLOW",
+      "expected_decision": "REVIEW",
       "expected_reason_family": "low_risk_field",
       "tests": "Contact churn. The number is written the way a human writes it, not in the record's format.",
       "email": {

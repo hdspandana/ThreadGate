@@ -107,26 +107,26 @@
   <!-- ============ OUTCOMES ============ -->
   <text x="30" y="596" class="s" font-size="12">Emitted decisions — the gate never returns a probability, a score, or an approval from the model.</text>
 
-  <rect x="676" y="628" width="140" height="62" rx="6" fill="#1b7f4f" stroke="#1b7f4f"/>
+  <rect x="676" y="628" width="140" height="62" rx="6" fill="#37507a" stroke="#37507a"/>
   <text x="746" y="652" class="out-t" text-anchor="middle">CLEAR</text>
-  <text x="746" y="670" class="out-s" text-anchor="middle">pre-registered or</text>
-  <text x="746" y="683" class="out-s" text-anchor="middle">non-destination change</text>
+  <text x="746" y="670" class="out-s" text-anchor="middle">nothing identified</text>
+  <text x="746" y="683" class="out-s" text-anchor="middle">not an approval</text>
 
-  <rect x="826" y="628" width="140" height="62" rx="6" fill="#b26a00" stroke="#b26a00"/>
-  <text x="896" y="652" class="out-t" text-anchor="middle">REVIEW / HOLD</text>
-  <text x="896" y="670" class="out-s" text-anchor="middle">human verifies</text>
-  <text x="896" y="683" class="out-s" text-anchor="middle">out of band</text>
+  <rect x="826" y="628" width="140" height="62" rx="6" fill="#8a5a00" stroke="#8a5a00"/>
+  <text x="896" y="652" class="out-t" text-anchor="middle">REVIEW</text>
+  <text x="896" y="670" class="out-s" text-anchor="middle">matches the record</text>
+  <text x="896" y="683" class="out-s" text-anchor="middle">human still attests</text>
 
-  <rect x="976" y="628" width="140" height="62" rx="6" fill="#37507a" stroke="#37507a"/>
-  <text x="1046" y="652" class="out-t" text-anchor="middle">NO CHANGE</text>
-  <text x="1046" y="670" class="out-s" text-anchor="middle">nothing requested,</text>
-  <text x="1046" y="683" class="out-s" text-anchor="middle">nothing to gate</text>
+  <rect x="976" y="628" width="140" height="62" rx="6" fill="#c1121f" stroke="#c1121f"/>
+  <text x="1046" y="652" class="out-t" text-anchor="middle">HOLD</text>
+  <text x="1046" y="670" class="out-s" text-anchor="middle">verify out of band</text>
+  <text x="1046" y="683" class="out-s" text-anchor="middle">before executing</text>
 
   <path class="flow" d="M 746 538 V 624"/>
   <path class="flow" d="M 896 538 V 624"/>
   <path class="flow" d="M 1046 538 V 624"/>
 
-  <text x="30" y="716" class="s">Legend — emitted strings in code: CLEAR = ALLOW, REVIEW/HOLD = HOLD, NO CHANGE = NO_CHANGE.</text>
+  <text x="30" y="716" class="s">Legend — the ladder only escalates: CLEAR → REVIEW → HOLD. CLEAR means no change was identified; it is not an approval.</text>
   <text x="30" y="736" class="s">Not implemented, and not claimed: attestation replay protection, reference version lineage, OCR or attachment inspection.</text>
   <text x="30" y="756" class="s">The system has no risk score. An invoice amount is reported to the analyst and decides nothing.</text>
 </svg>
