@@ -201,24 +201,30 @@ Not an unbiased benchmark. Shown for completeness and for the category view.
 ### Where the reading is actually needed
 
 Per-category accuracy on the combined set. `u` counts unsafe outcomes.
+Categories are assigned in `data/cases/categories.json`, which was written
+after both sets were frozen, so it annotates cases without relabelling them.
+This table is generated from `results/latest.json` by `python eval/run_eval.py`;
+if you change a case, re-run the evaluation before trusting it.
 
 | Category | n | rules_raw | rules_norm | offline | compromised | compromised_q |
 | --- | --- | --- | --- | --- | --- | --- |
+| ambiguity | 1 | 100 | 100 | 100 | 100 | 100 |
+| benign_low_risk_field | 4 | 0 | 0 | 100 | 0 | 0 |
+| benign_preregistered | 2 | 0 | 0 | 100 | 0 | 0 |
+| contradiction | 2 | 100 | 100 | 100 | 100 | 100 |
+| cross_message | 2 | 50 | 50 | 100 | 50 | 50 |
+| direct_change | 6 | 100 | 100 | 100 | 100 | 100 |
 | mention_vs_request | 6 | 17 | 17 | 100 | 50 | 50 |
 | negation | 2 | 0 | 0 | 100 | 0 | 0 |
-| cross_message | 3 | 67 | 67 | 100 | 67 | 67 |
 | obfuscation | 5 | 20 **(u4)** | 100 | 100 | 100 | 100 |
-| contradiction_ambiguity | 3 | 100 | 100 | 100 | 100 | 100 |
-| tokenless_implicit | 2 | 100 | 100 | 100 | 100 | 100 |
-| explicit_change | 6 | 100 | 100 | 100 | 100 | 100 |
 | prompt_injection | 5 | 100 | 100 | 100 | 100 | 100 |
+| quoted_forwarded | 1 | 100 | 100 | 100 | 100 | 100 |
 | social_engineering | 2 | 100 | 100 | 100 | 100 | 100 |
-| benign_preregistered | 2 | 0 | 0 | 100 | 0 | 0 |
-| benign_low_risk_field | 4 | 0 | 0 | 100 | 0 | 0 |
+| tokenless_implicit | 2 | 100 | 100 | 100 | 100 | 100 |
 
 Read that table carefully, because two rows flatter the baseline:
 
-- `prompt_injection`, `social_engineering` and `explicit_change` score 100% for
+- `prompt_injection`, `social_engineering` and `direct_change` score 100% for
   the rules baseline **because it holds everything**, not because it detects
   anything. That is the same behaviour that produces 0% on the benign
   categories. Accuracy averages the two out; the category view does not.
@@ -294,7 +300,7 @@ Read this part.
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
-python -m pytest            # 80 tests, no network needed
+python -m pytest            # 81 tests, no network needed
 python scripts/secret_scan.py   # nothing credential-like in the tree or history
 python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
 python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped

@@ -29,6 +29,10 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("bearer-token", re.compile(r"[Bb]earer\s+[A-Za-z0-9_\-\.]{24,}")),
     ("slack-token", re.compile(r"xox[baprs]-[A-Za-z0-9\-]{10,}")),
     ("github-token", re.compile(r"gh[pousr]_[A-Za-z0-9]{30,}")),
+    # Fine-grained personal access tokens use a different prefix from the
+    # classic ghp_/gho_/ghs_ forms, and are the ones a push workflow mints.
+    ("github-fine-grained-token", re.compile(r"github_pat_[A-Za-z0-9_]{20,}")),
+    ("stripe-live-key", re.compile(r"[sr]k_live_[A-Za-z0-9]{20,}")),
 ]
 
 # Files that legitimately mention key names without holding one.
