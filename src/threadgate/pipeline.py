@@ -19,7 +19,22 @@ from .policy import decide
 from .records import Vendor
 from .schema import Decision, Extraction
 from .tokens import Token, find_tokens
-from .validate import ValidationResult, check_old_values, validate_extraction
+from .validate import ValidatedClaim, ValidationResult, check_old_values, validate_extraction
+
+
+@dataclass
+class Ablation:
+    """Evaluation-only switches that disable one safeguard at a time.
+
+    These exist so the evaluation can show what each safeguard is worth. They
+    default to off, and the product path never sets them. Turning one on makes
+    the gate strictly weaker - that is the point, and it is why the ablated
+    rows are expected to look worse.
+    """
+
+    name: str = "none"
+    disable_destination_scan: bool = False
+    disable_evidence_validation: bool = False
 
 
 @dataclass
@@ -56,6 +71,20 @@ class PipelineResult:
         if self.expected is None:
             return None
         return self.expected != "HOLD" and self.decision.decision == "HOLD"
+
+
+def _trust_everything(ex: Extraction, nt: NormalizedText) -> ValidationResult:
+    """Ablation F. Accept the model's output without the closed-world check.
+
+    Used only to measure what evidence validation is worth. Every claim is
+    admitted, including values that are not in the email at all.
+    """
+    result = ValidationResult(intent=ex.intent, intent_evidenced=True)
+    result.intent_span_norm = (0, min(len(nt.text), 40)) or None
+    result.intent_span_raw = nt.to_raw_span(*result.intent_span_norm) if result.intent_span_norm else None
+    for claim in ex.claims:
+        result.claims.append(ValidatedClaim(claim=claim, verified=True, violations=["ablation"]))
+    return result
 
 
 def email_to_text(email: dict) -> str:

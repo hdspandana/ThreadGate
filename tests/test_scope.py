@@ -8,7 +8,11 @@ eventually waved through. A destination check cannot.
 from __future__ import annotations
 
 import json
+import os
 import re
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -141,9 +145,34 @@ def test_every_case_has_a_category():
 
 
 def test_gemini_is_skipped_not_silently_degraded():
-    """With no key the live system must be reported as skipped, never as a result."""
-    sys_path = ROOT / "eval" / "run_eval.py"
-    src = sys_path.read_text(encoding="utf-8")
-    assert "def gemini_available()" in src
-    assert "systems.remove(MODEL_SYSTEM)" in src
-    assert "--require-gemini" in src
+    """With no key the live systems must be reported as skipped, never as a result.
+
+    Behavioural rather than textual: the harness is actually invoked and the
+    output checked, so a refactor that quietly starts reporting a fail-closed
+    row as if it were a model result will fail this.
+    """
+    env = {k: v for k, v in os.environ.items() if k not in ("GEMINI_API_KEY", "GOOGLE_API_KEY")}
+    proc = subprocess.run(
+        [sys.executable, "eval/run_eval.py", "--sets", "v1",
+         "--systems", "gemini", "ai_only", "hybrid_no_scan", "hybrid_no_validation",
+         "--out", tempfile.mkdtemp()],
+        cwd=ROOT, capture_output=True, text=True, env=env, timeout=180,
+    )
+    out = proc.stdout + proc.stderr
+    assert "SKIPPED" in out, out[-800:]
+    for name in ("gemini", "ai_only", "hybrid_no_scan", "hybrid_no_validation"):
+        assert name in out.split("SKIPPED:")[1].split("\n")[0], out[-800:]
+    # and no row was produced for any of them
+    for line in out.splitlines():
+        if line.startswith(("gemini", "ai_only", "hybrid_")):
+            raise AssertionError(f"a model row was reported without a key: {line}")
+
+
+def test_require_gemini_fails_closed_without_a_key():
+    env = {k: v for k, v in os.environ.items() if k not in ("GEMINI_API_KEY", "GOOGLE_API_KEY")}
+    proc = subprocess.run(
+        [sys.executable, "eval/run_eval.py", "--sets", "v1", "--require-gemini",
+         "--out", tempfile.mkdtemp()],
+        cwd=ROOT, capture_output=True, text=True, env=env, timeout=180,
+    )
+    assert proc.returncode == 2, proc.stdout[-600:]

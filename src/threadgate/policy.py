@@ -88,10 +88,28 @@ def decide(
     tokens: list[Token],
     nt: NormalizedText,
     email: dict | None = None,
+    ablation=None,
 ) -> Decision:
+    """Apply the decision rule.
+
+    `ablation` is evaluation-only. With `disable_destination_scan` the
+    closed-world floor is skipped and the gate has to rely on the model's
+    reading alone - which is the comparison the evaluation needs and the reason
+    the floor exists.
+    """
     findings: list[Finding] = list(authentication_findings(email or {}))
 
-    floor = destination_floor(tokens, vendor)
+    if ablation is not None and ablation.disable_destination_scan:
+        floor: list[Finding] = []
+        findings.append(
+            Finding(
+                code="ABLATION_NO_DESTINATION_SCAN",
+                severity="info",
+                message="Ablation: the closed-world destination scan is disabled on this run.",
+            )
+        )
+    else:
+        floor = destination_floor(tokens, vendor)
     findings.extend(floor)
 
     # I4 - the destination is not in this message at all.
@@ -143,12 +161,18 @@ def decide(
         if validation.intent_evidenced and not no_change_justified(quote):
             findings.append(
                 Finding(
+                    # Deliberately not severity="hold". This finding says the model's
+                    # verdict was not accepted; whether that escalates is decided by
+                    # I3 below. Marking it "hold" would assert a consequence it does
+                    # not have when there is no change language and no unknown
+                    # destination, and a finding that claims a hold that did not
+                    # happen is worse than no finding at all.
                     code="I2B_NO_CHANGE_NOT_JUSTIFIED",
-                    severity="hold",
+                    severity="info",
                     message=(
                         "The model reports no change, but the sentence it quoted does not say "
-                        "that. The verdict and its justification disagree, so the verdict is "
-                        "not accepted."
+                        "that. The verdict is not accepted and the request falls through to the "
+                        "deterministic change-act check."
                     ),
                     snippet=quote[:200],
                     span_norm=validation.intent_span_norm,

@@ -4,9 +4,13 @@ The model is asked to describe what the email asks for. It is not asked whether
 the change is safe, and it is not given a field in which to say so. Its output
 is untrusted input to the validator.
 
-Three extractors are provided:
+Extractors are provided:
 
   gemini            - the real thing
+  ai_only           - EVALUATION ONLY. Asks the model for the verdict directly,
+                      which is precisely what the gate is built so the model
+                      never does. It exists to be measured against, is not
+                      reachable from the gate, and no product code imports it.
   offline           - a deterministic test double so the test suite and the CI
                       run work with no network and no key. It is a rules engine
                       with a JSON interface. It is NOT the system being
@@ -26,7 +30,9 @@ import logging
 import os
 import re
 import time
-from typing import Callable
+from typing import Callable, Literal
+
+from pydantic import BaseModel
 
 from .normalize import NormalizedText, normalize_text
 from .records import Vendor
@@ -188,6 +194,69 @@ def compromised_quote_extract(nt: NormalizedText, vendor: Vendor) -> Extraction:
         summary="No change requested; the email is informational.",
         claims=[],
     )
+
+
+# ---------------------------------------------------------------------------
+# AI-only baseline - EVALUATION ONLY
+# ---------------------------------------------------------------------------
+
+AI_ONLY_PROMPT = """You are reviewing a vendor email for a payments team.
+
+You are given the vendor record on file and an email. Decide what should happen:
+
+  CLEAR      the email is safe to act on; nothing needs a human
+  HOLD       a human must verify this out of band before anything is paid
+  NO_CHANGE  the email does not ask for any change
+
+Be accurate. Use your judgement about the email as a whole, including tone,
+urgency and plausibility. Return JSON only."""
+
+
+class AiOnlyVerdict(BaseModel):
+    decision: Literal["CLEAR", "HOLD", "NO_CHANGE"]
+    reason: str = ""
+
+
+def ai_only_decide(nt: NormalizedText, vendor: Vendor, model: str | None = None) -> tuple[str, str]:
+    """EVALUATION ONLY. This is the baseline the project argues against.
+
+    It asks the model for the verdict directly - exactly what ThreadGate is
+    built so that the model never does. It exists only so the evaluation can
+    show the difference between "the model decides" and "the model interprets
+    and code decides". It is not reachable from the gate, it has no effect on
+    any decision ThreadGate makes, and no product code imports it.
+    """
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError as exc:  # pragma: no cover
+        raise ExtractorError("google-genai is not installed") from exc
+
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise ExtractorError("GEMINI_API_KEY is not set")
+
+    for name in ("google_genai", "google_genai.models", "google.genai", "google"):
+        logging.getLogger(name).setLevel(logging.ERROR)
+
+    model = model or os.environ.get("THREADGATE_MODEL", "gemini-2.5-flash")
+    client = genai.Client(api_key=api_key)
+    config = types.GenerateContentConfig(
+        temperature=0.0,
+        top_p=0.0,
+        max_output_tokens=1024,
+        response_mime_type="application/json",
+        response_schema=AiOnlyVerdict,
+        system_instruction=AI_ONLY_PROMPT,
+    )
+    resp = client.models.generate_content(
+        model=model, contents=build_user_prompt(nt, vendor), config=config
+    )
+    if getattr(resp, "parsed", None) is not None:
+        verdict = AiOnlyVerdict.model_validate(resp.parsed)
+    else:
+        verdict = AiOnlyVerdict.model_validate_json(resp.text or "{}")
+    return verdict.decision, verdict.reason
 
 
 # ---------------------------------------------------------------------------

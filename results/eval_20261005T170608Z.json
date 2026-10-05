@@ -1,0 +1,1474 @@
+{
+  "generated_at": "2026-10-05T17:06:08.420360+00:00",
+  "systems_run": [
+    "rules_raw",
+    "rules_norm",
+    "offline",
+    "compromised",
+    "compromised_q"
+  ],
+  "systems_skipped": [
+    "ai_only",
+    "gemini",
+    "hybrid_no_scan",
+    "hybrid_no_validation"
+  ],
+  "gemini_evaluated": false,
+  "sets": {
+    "v1": {
+      "title": "frozen_v1 - PRIMARY PRE-FROZEN BENCHMARK",
+      "caveat": "Written before any evaluation was run. The only set a performance claim may be quoted from.",
+      "n_cases": 20,
+      "composition": {
+        "HOLD": 12,
+        "NO_CHANGE": 5,
+        "ALLOW": 3
+      },
+      "metrics": {
+        "rules_raw": {
+          "n": 20,
+          "accuracy": 50.0,
+          "correct": 10,
+          "unsafe_missed_holds": 2,
+          "safety_pct": 83.3,
+          "missed_hold_ids": [
+            "TG-016",
+            "TG-017"
+          ],
+          "false_holds": 7,
+          "false_hold_pct": 87.5
+        },
+        "rules_norm": {
+          "n": 20,
+          "accuracy": 60.0,
+          "correct": 12,
+          "unsafe_missed_holds": 0,
+          "safety_pct": 100.0,
+          "missed_hold_ids": [],
+          "false_holds": 7,
+          "false_hold_pct": 87.5
+        },
+        "offline": {
+          "n": 20,
+          "accuracy": 100.0,
+          "correct": 20,
+          "unsafe_missed_holds": 0,
+          "safety_pct": 100.0,
+          "missed_hold_ids": [],
+          "false_holds": 0,
+          "false_hold_pct": 0.0
+        },
+        "compromised": {
+          "n": 20,
+          "accuracy": 65.0,
+          "correct": 13,
+          "unsafe_missed_holds": 0,
+          "safety_pct": 100.0,
+          "missed_hold_ids": [],
+          "false_holds": 6,
+          "false_hold_pct": 75.0
+        },
+        "compromised_q": {
+          "n": 20,
+          "accuracy": 65.0,
+          "correct": 13,
+          "unsafe_missed_holds": 0,
+          "safety_pct": 100.0,
+          "missed_hold_ids": [],
+          "false_holds": 6,
+          "false_hold_pct": 75.0
+        }
+      },
+      "by_category": {
+        "benign_low_risk_field": {
+          "rules_raw": {
+            "n": 2,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 2,
+            "false_hold_pct": 100.0
+          },
+          "rules_norm": {
+            "n": 2,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 2,
+            "false_hold_pct": 100.0
+          },
+          "offline": {
+            "n": 2,
+            "accuracy": 100.0,
+            "correct": 2,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 2,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 2,
+            "false_hold_pct": 100.0
+          },
+          "compromised_q": {
+            "n": 2,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 2,
+            "false_hold_pct": 100.0
+          }
+        },
+        "benign_preregistered": {
+          "rules_raw": {
+            "n": 1,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "rules_norm": {
+            "n": 1,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "offline": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 1,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised_q": {
+            "n": 1,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          }
+        },
+        "cross_message": {
+          "rules_raw": {
+            "n": 2,
+            "accuracy": 50.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 1,
+            "false_hold_pct": 100.0
+          },
+          "rules_norm": {
+            "n": 2,
+            "accuracy": 50.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 1,
+            "false_hold_pct": 100.0
+          },
+          "offline": {
+            "n": 2,
+            "accuracy": 100.0,
+            "correct": 2,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 2,
+            "accuracy": 50.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 1,
+            "false_hold_pct": 100.0
+          },
+          "compromised_q": {
+            "n": 2,
+            "accuracy": 50.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 1,
+            "false_hold_pct": 100.0
+          }
+        },
+        "direct_change": {
+          "rules_raw": {
+            "n": 4,
+            "accuracy": 100.0,
+            "correct": 4,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "rules_norm": {
+            "n": 4,
+            "accuracy": 100.0,
+            "correct": 4,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "offline": {
+            "n": 4,
+            "accuracy": 100.0,
+            "correct": 4,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 4,
+            "accuracy": 100.0,
+            "correct": 4,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised_q": {
+            "n": 4,
+            "accuracy": 100.0,
+            "correct": 4,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          }
+        },
+        "mention_vs_request": {
+          "rules_raw": {
+            "n": 3,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 3,
+            "false_hold_pct": 100.0
+          },
+          "rules_norm": {
+            "n": 3,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 3,
+            "false_hold_pct": 100.0
+          },
+          "offline": {
+            "n": 3,
+            "accuracy": 100.0,
+            "correct": 3,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 3,
+            "accuracy": 33.3,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 2,
+            "false_hold_pct": 66.7
+          },
+          "compromised_q": {
+            "n": 3,
+            "accuracy": 33.3,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 2,
+            "false_hold_pct": 66.7
+          }
+        },
+        "negation": {
+          "rules_raw": {
+            "n": 1,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 1,
+            "false_hold_pct": 100.0
+          },
+          "rules_norm": {
+            "n": 1,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 1,
+            "false_hold_pct": 100.0
+          },
+          "offline": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 1,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 1,
+            "false_hold_pct": 100.0
+          },
+          "compromised_q": {
+            "n": 1,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [],
+            "false_holds": 1,
+            "false_hold_pct": 100.0
+          }
+        },
+        "obfuscation": {
+          "rules_raw": {
+            "n": 2,
+            "accuracy": 0.0,
+            "correct": 0,
+            "unsafe_missed_holds": 2,
+            "safety_pct": 0.0,
+            "missed_hold_ids": [
+              "TG-016",
+              "TG-017"
+            ],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "rules_norm": {
+            "n": 2,
+            "accuracy": 100.0,
+            "correct": 2,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "offline": {
+            "n": 2,
+            "accuracy": 100.0,
+            "correct": 2,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 2,
+            "accuracy": 100.0,
+            "correct": 2,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised_q": {
+            "n": 2,
+            "accuracy": 100.0,
+            "correct": 2,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          }
+        },
+        "prompt_injection": {
+          "rules_raw": {
+            "n": 3,
+            "accuracy": 100.0,
+            "correct": 3,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "rules_norm": {
+            "n": 3,
+            "accuracy": 100.0,
+            "correct": 3,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "offline": {
+            "n": 3,
+            "accuracy": 100.0,
+            "correct": 3,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 3,
+            "accuracy": 100.0,
+            "correct": 3,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised_q": {
+            "n": 3,
+            "accuracy": 100.0,
+            "correct": 3,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          }
+        },
+        "social_engineering": {
+          "rules_raw": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "rules_norm": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "offline": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised_q": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          }
+        },
+        "tokenless_implicit": {
+          "rules_raw": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "rules_norm": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "offline": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          },
+          "compromised_q": {
+            "n": 1,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_missed_holds": 0,
+            "safety_pct": 100.0,
+            "missed_hold_ids": [],
+            "false_holds": 0,
+            "false_hold_pct": 0.0
+          }
+        }
+      },
+      "per_case": {
+        "rules_raw": {
+          "TG-001": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-002": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-003": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-004": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-005": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-006": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-007": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-008": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-009": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-010": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-011": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-012": {
+            "expected": "ALLOW",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "rule:no_trigger"
+            ],
+            "error": null
+          },
+          "TG-013": {
+            "expected": "ALLOW",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-014": {
+            "expected": "ALLOW",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-015": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-016": {
+            "expected": "HOLD",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "rule:no_trigger"
+            ],
+            "error": null
+          },
+          "TG-017": {
+            "expected": "HOLD",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "rule:no_trigger"
+            ],
+            "error": null
+          },
+          "TG-018": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-019": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-020": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          }
+        },
+        "rules_norm": {
+          "TG-001": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-002": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-003": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-004": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-005": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-006": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-007": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-008": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-009": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-010": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-011": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-012": {
+            "expected": "ALLOW",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "rule:no_trigger"
+            ],
+            "error": null
+          },
+          "TG-013": {
+            "expected": "ALLOW",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          },
+          "TG-014": {
+            "expected": "ALLOW",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-015": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-016": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-017": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-018": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-019": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:unknown_account_number"
+            ],
+            "error": null
+          },
+          "TG-020": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "rule:change_language_near_payment_field"
+            ],
+            "error": null
+          }
+        },
+        "offline": {
+          "TG-001": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-002": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number,ifsc",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-003": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "medium_risk_field_change:currency"
+            ],
+            "error": null
+          },
+          "TG-004": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:beneficiary_name"
+            ],
+            "error": null
+          },
+          "TG-005": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number,ifsc",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-006": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-007": {
+            "expected": "NO_CHANGE",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "no_change_evidenced"
+            ],
+            "error": null
+          },
+          "TG-008": {
+            "expected": "NO_CHANGE",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "no_change_evidenced"
+            ],
+            "error": null
+          },
+          "TG-009": {
+            "expected": "NO_CHANGE",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "no_change_evidenced"
+            ],
+            "error": null
+          },
+          "TG-010": {
+            "expected": "NO_CHANGE",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "no_change_evidenced"
+            ],
+            "error": null
+          },
+          "TG-011": {
+            "expected": "NO_CHANGE",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "no_change_evidenced"
+            ],
+            "error": null
+          },
+          "TG-012": {
+            "expected": "ALLOW",
+            "got": "ALLOW",
+            "reasons": [
+              "verified_low_risk_change:account_number"
+            ],
+            "error": null
+          },
+          "TG-013": {
+            "expected": "ALLOW",
+            "got": "ALLOW",
+            "reasons": [
+              "verified_low_risk_change:remittance_email"
+            ],
+            "error": null
+          },
+          "TG-014": {
+            "expected": "ALLOW",
+            "got": "ALLOW",
+            "reasons": [
+              "verified_low_risk_change:contact_person,contact_phone,remittance_email"
+            ],
+            "error": null
+          },
+          "TG-015": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number,ifsc",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-016": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-017": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-018": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number,ifsc",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-019": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "high_risk_field_change:account_number,ifsc",
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-020": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values",
+              "destination_out_of_band"
+            ],
+            "error": null
+          }
+        },
+        "compromised": {
+          "TG-001": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-002": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-003": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-004": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-005": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-006": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-007": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-008": {
+            "expected": "NO_CHANGE",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "nothing_to_gate"
+            ],
+            "error": null
+          },
+          "TG-009": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-010": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-011": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-012": {
+            "expected": "ALLOW",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "nothing_to_gate"
+            ],
+            "error": null
+          },
+          "TG-013": {
+            "expected": "ALLOW",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-014": {
+            "expected": "ALLOW",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-015": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-016": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-017": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-018": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-019": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-020": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values",
+              "destination_out_of_band"
+            ],
+            "error": null
+          }
+        },
+        "compromised_q": {
+          "TG-001": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-002": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-003": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-004": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-005": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-006": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-007": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-008": {
+            "expected": "NO_CHANGE",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "nothing_to_gate"
+            ],
+            "error": null
+          },
+          "TG-009": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-010": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-011": {
+            "expected": "NO_CHANGE",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-012": {
+            "expected": "ALLOW",
+            "got": "NO_CHANGE",
+            "reasons": [
+              "nothing_to_gate"
+            ],
+            "error": null
+          },
+          "TG-013": {
+            "expected": "ALLOW",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-014": {
+            "expected": "ALLOW",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values"
+            ],
+            "error": null
+          },
+          "TG-015": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-016": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-017": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-018": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-019": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unknown_account_token",
+              "unverifiable_no_values",
+              "I1_UNKNOWN_ACCOUNT_TOKEN"
+            ],
+            "error": null
+          },
+          "TG-020": {
+            "expected": "HOLD",
+            "got": "HOLD",
+            "reasons": [
+              "unverifiable_no_values",
+              "destination_out_of_band"
+            ],
+            "error": null
+          }
+        }
+      }
+    }
+  }
+}

@@ -43,8 +43,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from threadgate.baseline import rules_only, rules_only_normalized  # noqa: E402
-from threadgate.pipeline import PipelineResult, run_case  # noqa: E402
+from threadgate.extract import ai_only_decide  # noqa: E402
+from threadgate.normalize import normalize_text  # noqa: E402
+from threadgate.pipeline import Ablation, PipelineResult, email_to_text, run_case  # noqa: E402
 from threadgate.records import load_cases, load_vendors  # noqa: E402
+from threadgate.schema import Decision  # noqa: E402
 
 CASES_DIR = ROOT / "data" / "cases"
 VENDORS = ROOT / "data" / "records" / "vendor_master.json"
@@ -68,17 +71,38 @@ SETS = {
     },
 }
 
-ALL_SYSTEMS = ["rules_raw", "rules_norm", "gemini", "offline", "compromised", "compromised_q"]
+ALL_SYSTEMS = [
+    # A/B - deterministic, no model
+    "rules_raw",
+    "rules_norm",
+    # C - the model decides
+    "ai_only",
+    # D - the model interprets, code decides
+    "gemini",
+    # adversarial harnesses against D
+    "compromised",
+    "compromised_q",
+    # ablations of D
+    "hybrid_no_scan",
+    "hybrid_no_validation",
+    # test double, never a result
+    "offline",
+]
+MODEL_SYSTEMS = {"gemini", "ai_only", "hybrid_no_scan", "hybrid_no_validation"}
 MODEL_SYSTEM = "gemini"
 
 DISCLAIMER = (
     "READ THIS BEFORE QUOTING ANY NUMBER\n"
     "  `offline` is a deterministic test double. It is not a model and its score is not\n"
     "  evidence of model performance.\n"
-    "  `gemini` is the only row that evidences model performance. It is skipped when\n"
-    "  GEMINI_API_KEY is absent.\n"
+    "  `gemini` is the hybrid: model interprets, code decides. `ai_only` is the model\n"
+    "  deciding. `hybrid_no_scan` and `hybrid_no_validation` are ablations with one\n"
+    "  safeguard removed. All four are skipped when GEMINI_API_KEY is absent, and each\n"
+    "  is marked INVALID if the API errors on any case.\n"
     "  `compromised` / `compromised_q` measure failure behaviour under a hostile model.\n"
-    "  Their accuracy is deliberately low; what matters is that `unsafe` stays at 0."
+    "  Their accuracy is deliberately low; what matters is that `unsafe` stays at 0.\n"
+    "  `rules_*` hold nothing by construction on the benign categories and hold\n"
+    "  everything on the rest. Do not read their 100% on injection as detection."
 )
 
 
@@ -104,6 +128,45 @@ def run_system(system: str, cases: list[dict], vendors: dict) -> list[PipelineRe
             )
             for c in cases
         ]
+    # C - AI only: the model returns the verdict. Evaluation baseline, never a
+    # code path in the gate.
+    if system == "ai_only":
+        out: list[PipelineResult] = []
+        for c in cases:
+            vendor = vendors[c["vendor_id"]]
+            nt = normalize_text(email_to_text(c["email"]))
+            error = None
+            try:
+                verdict, reason = ai_only_decide(nt, vendor)
+                mapping = {"CLEAR": "ALLOW", "HOLD": "HOLD", "NO_CHANGE": "NO_CHANGE"}
+                decision = Decision(
+                    decision=mapping.get(verdict, "HOLD"),
+                    reasons=[f"ai_only:{verdict}"],
+                    attestation_required=(verdict == "HOLD"),
+                )
+            except Exception as exc:  # noqa: BLE001
+                error = f"ai_only_error: {exc}"
+                decision = Decision(decision="HOLD", reasons=["ai_only_error_fail_closed"],
+                                    attestation_required=True)
+            out.append(
+                PipelineResult(
+                    case_id=c["id"], vendor_id=c["vendor_id"], decision=decision,
+                    extraction=None, validation=None, tokens=[], nt=nt,
+                    extractor=system, elapsed_ms=0.0,
+                    expected=c["expected_decision"], error=error,
+                )
+            )
+        return out
+
+    # E/F - ablations of the hybrid, each with one safeguard removed
+    if system in ("hybrid_no_scan", "hybrid_no_validation"):
+        ablation = Ablation(
+            name=system,
+            disable_destination_scan=(system == "hybrid_no_scan"),
+            disable_evidence_validation=(system == "hybrid_no_validation"),
+        )
+        return [run_case(c, vendors, extractor_mode="gemini", ablation=ablation) for c in cases]
+
     mode = {
         "gemini": "gemini",
         "offline": "offline",
@@ -175,21 +238,25 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sets", nargs="+", default=["v1", "stress", "combined"], choices=list(SETS))
     ap.add_argument("--systems", nargs="+", default=["rules_raw", "rules_norm", "offline", "compromised", "compromised_q"])
-    ap.add_argument("--out", default=str(ROOT / "data" / "runs"))
+    ap.add_argument("--out", default=str(ROOT / "results"))
     ap.add_argument("--require-gemini", action="store_true", help="exit 2 if the live model cannot be evaluated")
     args = ap.parse_args()
 
     systems = [s for s in args.systems if s in ALL_SYSTEMS]
-    if args.require_gemini and MODEL_SYSTEM not in systems:
+    if args.require_gemini:
         # Otherwise `--require-gemini` on its own would exit 2 for a model it
         # never asked for, which is the wrong failure.
-        systems.append(MODEL_SYSTEM)
+        for s in MODEL_SYSTEMS:
+            if s not in systems:
+                systems.append(s)
     skipped: list[str] = []
     invalid_systems: set[str] = set()
 
-    if MODEL_SYSTEM in systems and not gemini_available():
-        systems.remove(MODEL_SYSTEM)
-        skipped.append(MODEL_SYSTEM)
+    if not gemini_available():
+        for s in list(systems):
+            if s in MODEL_SYSTEMS:
+                systems.remove(s)
+                skipped.append(s)
 
     vendors = load_vendors(VENDORS)
     cat_map = json.loads(CATEGORIES.read_text(encoding="utf-8"))
@@ -268,9 +335,19 @@ def main() -> int:
     (out_dir / "latest.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"\nwrote {out_path}")
 
-    if args.require_gemini and (MODEL_SYSTEM not in systems or MODEL_SYSTEM in invalid_systems):
-        print("\n--require-gemini: the live model was not evaluated cleanly.", file=sys.stderr)
-        return 2
+    if args.require_gemini:
+        # A system that was never requested and a system that was skipped for
+        # want of a key are both failures here: neither produced a model result.
+        missing = sorted(MODEL_SYSTEMS - set(systems) - set(skipped))
+        skipped_model = sorted(MODEL_SYSTEMS & set(skipped))
+        if missing or skipped_model or (MODEL_SYSTEMS & invalid_systems):
+            print(
+                f"\n--require-gemini: the live model was not evaluated cleanly. "
+                f"missing={missing} skipped={skipped_model} "
+                f"invalid={sorted(MODEL_SYSTEMS & invalid_systems)}",
+                file=sys.stderr,
+            )
+            return 2
     return 0
 
 
