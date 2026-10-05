@@ -58,6 +58,17 @@ email ──▶ normalise ──▶ token finder ──┐            (code)
                             ALLOW / HOLD / NO_CHANGE
 ```
 
+The same thing as a trust-boundary diagram, with the one edge that does not
+exist drawn explicitly: **`docs/architecture.svg`**. The model sits in the
+untrusted half; the dashed line is the boundary; the crossed-out arrow from the
+model to the verdict is the whole design.
+
+Five screenshots of the running app are in `docs/screenshots/` — a benign
+release, the canonical hold, a prompt-injection hold, the negation case where
+the rules baseline is wrong, and the corpus table. They are captures, not
+mockups, and every number in them was produced by the pipeline at capture time.
+`scripts/capture_screenshots.py` regenerates them.
+
 ### Why this is not a wrapper
 
 Three things sit between the model's output and the decision.
@@ -272,9 +283,18 @@ Read this part.
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
-python -m pytest            # 69 tests, no network needed
-python eval/run_eval.py
+python -m pytest            # 80 tests, no network needed
+python scripts/secret_scan.py   # nothing credential-like in the tree or history
+python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
+python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped
 streamlit run app/streamlit_app.py
+```
+
+To regenerate the screenshots in `docs/screenshots/` from a running app:
+
+```bash
+pip install playwright && playwright install --with-deps chromium
+python scripts/capture_screenshots.py --extractor gemini
 ```
 
 Deployed: the key is read from Streamlit secrets (or `.env` locally) and is
@@ -297,7 +317,8 @@ data/cases/      frozen_v1 (benchmark), additions (stress), categories.json
 data/records/    synthetic vendor master
 eval/            evaluation harness and reports
 app/             Streamlit demo
-docs/            deployment and submission notes
+scripts/         kill gate, secret audit, screenshot capture
+docs/            architecture.svg, screenshots/, deployment + submission notes
 ```
 
 ## Track

@@ -15,14 +15,11 @@ Both are listed in the README's limitations instead.
 
 from __future__ import annotations
 
-import re
-
 import pytest
 
 from threadgate.extract import compromised_extract, compromised_quote_extract, offline_extract
-from threadgate.pipeline import email_to_text, run_case
-from threadgate.records import load_vendors
-from threadgate.schema import Claim, Extraction, Finding
+from threadgate.pipeline import run_case
+from threadgate.schema import Claim, Extraction
 from threadgate.validate import validate_extraction
 
 ROOT_CASES = "data/cases/frozen_v2.json"
@@ -85,7 +82,6 @@ def test_a_full_destination_that_matches_is_not_a_change(vendors):
     """The counterpart: the exact account on file is not reported as a change."""
     from threadgate.compare import diff_claims
     from threadgate.normalize import normalize_text
-    from threadgate.pipeline import email_to_text
 
     vendor = vendors["V-1001"]
     nt = normalize_text("A/C 50100234554455\nIFSC HDFC0001234")

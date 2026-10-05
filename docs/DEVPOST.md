@@ -27,10 +27,25 @@ AI + Cybersecurity
 - GitHub repo: `[[FILL: public repo URL]]`
 - Demo video (public YouTube, 2–4 min): `[[FILL: video URL]]`
 - Live deployment: `[[FILL: Streamlit Community Cloud URL]]`
-- Screenshots: `[[FILL: 3 screenshots — HOLD with the 4455→9821 diff, the
-  negation case where the rules baseline is wrong, the corpus table]]`
-- Architecture diagram: inline in the README pipeline block; `[[FILL: export as
-  an image if the form prefers an upload]]`
+- Screenshots: captured, `docs/screenshots/`. Five real captures of the running
+  app, not mockups — each verdict asserted against the live DOM before saving:
+  1. `01_benign_pre_registered_CLEAR.png` — TG-012, a change to an account
+     already on file. Releases it; holding these is pure review cost.
+  2. `02_destination_change_HOLD.png` — TG-001, the 4455 → 9821 diff, with the
+     red "not on file" highlight and the callback checklist.
+  3. `03_prompt_injection_HOLD.png` — TG-015, where the email instructs the
+     assistant to report no change.
+  4. `04_semantic_negation_NO_CHANGE.png` — TG-007, the rules-only baseline
+     holds it and the gate does not.
+  5. `05_evaluation_comparison.png` — the corpus table plus the per-category
+     breakdown.
+- Architecture diagram: `docs/architecture.svg` at the repository root of
+  `docs/`. It renders on GitHub and Devpost. `[[FILL: if the form insists on a
+  raster upload, export with
+  `python -c "import cairosvg; cairosvg.svg2png(url='docs/architecture.svg', write_to='docs/architecture.png', output_width=1160)"`]]`
+
+Both the screenshots and the diagram must be re-taken after the real Gemini run
+— see "Before submitting" below.
 
 ---
 
@@ -62,7 +77,7 @@ on file, and if not, does a human have to look at it?**
 ### 2. Technical approach and components
 
 **Stack:** Python, Google Gemini (`gemini-2.5-flash`) for interpretation only,
-Pydantic for output contracts, Streamlit for the demo, pytest for the 69-test
+Pydantic for output contracts, Streamlit for the demo, pytest for the 80-test
 suite. No embeddings, no vector store, no OCR, no URL scanning, no threat feed.
 
 The pipeline is deliberately asymmetric. The model sits in exactly one box, and
@@ -131,6 +146,15 @@ Measured, and reproducible with `python eval/run_eval.py`:
 | ThreadGate (Gemini) | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` |
 | ThreadGate, model steered to say "no change" | 65.0% | **0** | 75.0% | **0** |
 | ThreadGate, steered model forging a verbatim quote | 65.0% | **0** | 75.0% | **0** |
+| The model alone, deciding the verdict | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` |
+| ThreadGate, ablation: independent scan removed | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` |
+| ThreadGate, ablation: evidence validation removed | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` |
+
+The last three rows are the argument that this is not a wrapper. `ai_only` is
+the same model with no gate — it exists only to be compared against, and it is
+not reachable from the product. The two ablations remove one safeguard each;
+whatever accuracy they lose is what that safeguard was worth. Do not submit
+until all four rows are filled from a real run.
 
 **`unsafe` is the only error that can lose money** — a case that should be held
 that was not. `false hold` costs a phone call.
@@ -187,16 +211,28 @@ README:
 - [ ] Public YouTube video, 2–4 min
 - [ ] Public GitHub repo with this README
 - [x] Written description in three parts (above)
-- [ ] Screenshots, architecture diagram, deployment link
+- [x] Screenshots captured — re-capture with `--extractor gemini` after the real
+      run
+- [x] Architecture diagram — `docs/architecture.svg`
+- [ ] Deployment link
 - [ ] All team members listed: `[[FILL: Devpost handles]]`
 - [x] Statement that the project was built during the hackathon (`PRIOR_WORK.md`)
 
 ## Before submitting
 
 1. Run `python eval/run_eval.py --require-gemini` with the key set, and replace
-   every `[[FILL]]` in the tables above with the measured row.
+   every `[[FILL]]` in the tables above with the measured row. The command exits
+   **2** if any model system was skipped, so a silently absent key cannot look
+   like a completed run. Output lands in `results/`.
 2. Re-run `python scripts/kill_gate.py` and `python -m pytest`; both must be
-   green on the final commit.
+   green on the final commit (80 tests, 17 kill-gate checks).
 3. `git log --reverse` — the first commit must be dated after 2026-10-03 12:00
    EDT / 21:30 IST.
-4. Confirm no key is committed: `git ls-files | xargs grep -l AIza` must be empty.
+4. Confirm no key is committed: `git ls-files | xargs grep -l AIza` must be
+   empty. `python scripts/secret_scan.py` checks the tree and the full history.
+5. Re-capture the screenshots against the real model path
+   (`python scripts/capture_screenshots.py --extractor gemini`) so the corpus
+   shot shows a populated `gemini` row instead of a skip warning, then commit
+   the refreshed PNGs.
+6. Push the public repo and deploy to Community Cloud; fill in the repo,
+   video and deployment URLs above.

@@ -36,8 +36,18 @@ stored as a secret rather than in the repo.
 - Switch the extractor to `compromised_quote` → `TG-001` still **HOLD**. This is
   the claim the submission rests on; check it on the deployed URL, not just
   locally.
-- Run the corpus button (40 cases). With the model, expect no `unsafe` in the
-  ThreadGate row and no `unsafe` in either compromised row.
+- Press **Run 20 cases across every system** (the default case set is `v1`, the
+  primary benchmark). With the key configured the table must gain four rows that
+  were previously listed as skipped — `gemini`, `ai_only`, `hybrid_no_scan`,
+  `hybrid_no_validation` — and the skip warning must disappear. If it does not,
+  the secret is not reaching the app; check the secret name is exactly
+  `GEMINI_API_KEY`.
+- Expect `unsafe` = 0 in the `gemini` row and in both compromised rows. Any
+  non-zero `unsafe` is named in red beneath the table with its case IDs; treat
+  that as a blocking defect, not a rounding error.
+- Switch the case set to the combined set and re-run to see the stress numbers.
+  Those are the only rows that may be quoted as stress results, never as field
+  accuracy.
 
 ## If the key is missing at deploy time
 
@@ -55,6 +65,24 @@ streamlit run app/streamlit_app.py
 
 `.env` is read via `python-dotenv` at import time and is gitignored.
 
+## Re-capturing the screenshots
+
+The screenshots in `docs/screenshots/` were captured from a running instance
+with **no API key set**, so they show the `offline` test double and a
+`Skipped without an API key` warning. That is honest, but it is not the shot you
+want on the submission page.
+
+Once the key is configured on the deployment:
+
+```bash
+python scripts/capture_screenshots.py --base-url https://<your-app>.streamlit.app --extractor gemini
+```
+
+That overwrites the five PNGs in place with captures of the real model path.
+Verify afterwards that the corpus table has the `gemini` row populated. If you
+capture locally instead, the same command against `http://127.0.0.1:8501` works
+provided `GEMINI_API_KEY` is exported in that shell.
+
 ## Notes
 
 - The app is stateless; it writes nothing to disk and stores nothing about the
@@ -63,3 +91,6 @@ streamlit run app/streamlit_app.py
   public deployment.
 - Free Community Cloud apps sleep when idle; expect a cold start of ~30s for
   the first judge who opens the link.
+- Capturing screenshots needs playwright plus its system libraries
+  (`pip install playwright && playwright install --with-deps chromium`). The
+  sandbox this was built in needed those installed before chromium would launch.

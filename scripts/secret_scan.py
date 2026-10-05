@@ -105,8 +105,14 @@ def scan_history() -> list[tuple[str, str, str]]:
                 hits.append(("secret-file-in-history", f"{rev[:8]}:{name}",
                              "a secret file was committed at some point"))
                 continue
-            blob_text = subprocess.run(["git", "cat-file", "-p", blob], cwd=ROOT,
-                                       capture_output=True, text=True).stdout
+            # Binary blobs (PNG screenshots, for instance) must not crash the
+            # audit; decode lossily and let the patterns find nothing.
+            raw = subprocess.run(["git", "cat-file", "-p", blob], cwd=ROOT,
+                                 capture_output=True).stdout
+            try:
+                blob_text = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                continue
             hits.extend(scan_text(blob_text, f"{rev[:8]}:{name}"))
     return hits
 
