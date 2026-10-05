@@ -102,6 +102,7 @@ def run_case(
     vendors: dict[str, Vendor],
     extractor_mode: str | None = None,
     extractor_fn=None,
+    ablation: Ablation | None = None,
 ) -> PipelineResult:
     started = time.perf_counter()
     vendor = vendors[case["vendor_id"]]
@@ -119,13 +120,20 @@ def run_case(
         error = f"extractor_error: {exc}"
         extraction = Extraction(intent="unverifiable", intent_evidence="", summary=error)
 
-    validation = validate_extraction(extraction, nt)
+    # Ablation F: skip the closed-world check and admit everything the model
+    # produced. Evaluation only - the product path never sets an ablation.
+    if ablation is not None and ablation.disable_evidence_validation:
+        validation = _trust_everything(extraction, nt)
+        notes.append("ablation:evidence_validation_disabled")
+    else:
+        validation = validate_extraction(extraction, nt)
     record_values = {f: vendor.current(f) for f in {c.claim.field for c in validation.claims}}
     notes.extend(check_old_values(validation.claims, record_values))
     notes.extend(f"validator:{v}" for v in validation.violations)
 
     diffs = diff_claims(validation.claims, vendor)
-    decision = decide(vendor, extraction.intent, validation, diffs, tokens, nt, case["email"])
+    decision = decide(vendor, extraction.intent, validation, diffs, tokens, nt,
+                      case["email"], ablation=ablation)
 
     if error:
         decision.decision = "HOLD"

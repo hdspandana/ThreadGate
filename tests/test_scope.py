@@ -21,7 +21,7 @@ from threadgate.compare import diff_claims
 from threadgate.extract import compromised_extract, compromised_quote_extract, offline_extract
 from threadgate.invariants import out_of_band_destination
 from threadgate.normalize import normalize_text
-from threadgate.pipeline import email_to_text, run_case
+from threadgate.pipeline import Ablation, email_to_text, run_case
 from threadgate.records import load_cases
 from threadgate.schema import Claim, Extraction
 from threadgate.validate import validate_extraction
@@ -134,6 +134,51 @@ def test_no_unsafe_outcomes_anywhere(vendors):
                 r: PipelineResult = run_case(case, vendors, extractor_fn=attack)
                 assert not r.unsafe, f"{name} {case['id']} released a hold under {attack.__name__}"
                 assert r.decision.decision != "REVIEW"
+
+
+def test_both_ablation_switches_reach_the_pipeline(case_by_id_all, vendors):
+    """Regression guard for the two ablation rows in the evaluation table.
+
+    `eval/run_eval.py` builds an Ablation and hands it to `run_case`. If that
+    parameter is ever dropped or renamed, the switches silently no-op and the
+    two ablation rows become byte-identical to the hybrid row they exist to
+    contrast with - which would quietly delete the "this is not a wrapper"
+    argument. Nothing else catches it: the ablation path only executes when
+    GEMINI_API_KEY is present, so a green suite here proves nothing on its own.
+
+    Run against the offline double because that is the only interpreter
+    available without a key. This asserts the plumbing moves, not what the
+    model does.
+    """
+
+    def decisions(**flags):
+        ab = Ablation(name="test", **flags)
+        return {
+            cid: run_case(c, vendors, extractor_fn=offline_extract, ablation=ab).decision.decision
+            for cid, c in case_by_id_all.items()
+        }
+
+    def floor_codes(case):
+        r = run_case(case, vendors, extractor_fn=offline_extract,
+                     ablation=Ablation(name="s", disable_destination_scan=True))
+        return [f.code for f in r.decision.findings if f.code.startswith("I1")]
+
+    base = decisions()
+    no_validation = decisions(disable_evidence_validation=True)
+
+    # E: the destination floor must vanish when the scan is switched off.
+    assert [f.code for f in
+            run_case(case_by_id_all["TG-001"], vendors,
+                     extractor_fn=offline_extract).decision.findings
+            if f.code.startswith("I1")], "TG-001 should trip the floor normally"
+    assert floor_codes(case_by_id_all["TG-001"]) == [], "floor still firing with the scan disabled"
+
+    # F: admitting unverified claims must change at least one outcome.
+    assert no_validation != base, "evidence-validation ablation had no effect"
+
+    # and the switch must never be the default
+    assert decisions(disable_destination_scan=False,
+                     disable_evidence_validation=False) == base
 
 
 def test_every_case_has_a_category():
