@@ -45,7 +45,7 @@ SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
 
 
 def account_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
-    """I1. Unknown account-like numbers present in the email."""
+    """I1a. Unknown account-like numbers present in the email."""
     findings: list[Finding] = []
     for tok in unique_accounts(tokens):
         if vendor.is_known_account(tok.normalized):
@@ -66,6 +66,88 @@ def account_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
             )
         )
     return findings
+
+
+def destination_code_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
+    """I1b. Branch/routing codes that are not associated with this vendor.
+
+    The closed-world rule applies to every supported destination token the
+    scanner can see, not only to account numbers. An IFSC, IBAN or SWIFT code in
+    the email that belongs to neither the current record nor a pre-registered
+    alternate is a destination we do not recognise.
+    """
+    findings: list[Finding] = []
+    seen: set[str] = set()
+    for tok in tokens:
+        if tok.kind not in ("ifsc", "iban", "swift"):
+            continue
+        if vendor.is_known_destination_code(tok.kind, tok.raw):
+            continue
+        key = f"{tok.kind}:{tok.raw.strip().upper()}"
+        if key in seen:
+            continue
+        seen.add(key)
+        findings.append(
+            Finding(
+                code="I1_UNKNOWN_DESTINATION_CODE",
+                severity="hold",
+                message=(
+                    f"{tok.kind.upper()} {tok.raw.strip()} appears in this email and is not "
+                    f"associated with {vendor.display_name} or any pre-registered alternate."
+                ),
+                snippet=tok.raw.strip(),
+                span_norm=(tok.start, tok.end),
+                independent_of_model=True,
+            )
+        )
+    return findings
+
+
+def destination_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
+    """The whole AI-independent floor: every visible destination token."""
+    return account_floor(tokens, vendor) + destination_code_floor(tokens, vendor)
+
+
+# Words that mean "the destination is somewhere other than this message body".
+OUT_OF_BAND = re.compile(
+    r"(attach|enclos|image|scan|pdf|screenshot|photo|snapshot|jpe?g|\.png|"
+    r"spreadsheet|excel|\.xlsx?|portal|download|in the file|separate file)",
+    re.IGNORECASE,
+)
+
+
+def out_of_band_destination(norm_text: str) -> list[Finding]:
+    """I4. The email says the destination lives somewhere we cannot read.
+
+    ThreadGate does no OCR and no attachment parsing, and it is not going to grow
+    any: opening an attacker-supplied attachment to inspect it is not a control,
+    it is an exposure. So when the message says the account is in an image, a PDF
+    or a portal, the correct answer is the same as for any unverifiable
+    destination - a human retrieves it through a channel they initiate.
+
+    This is a sentence-level pattern over text already in the pipeline. It is not
+    OCR, not URL scanning, and not attachment analysis.
+    """
+    for sentence in SENTENCE_SPLIT.split(norm_text or ""):
+        if not sentence.strip():
+            continue
+        m = OUT_OF_BAND.search(sentence)
+        if m and ENTITY_WORD.search(sentence):
+            return [
+                Finding(
+                    code="I4_DESTINATION_OUT_OF_BAND",
+                    severity="hold",
+                    message=(
+                        "The message points at a destination this pipeline cannot read "
+                        f"({m.group(0).lower()}). ThreadGate does not open attachments or "
+                        "images, so the destination is unverifiable and a human must "
+                        "retrieve it through a channel they initiate."
+                    ),
+                    snippet=sentence.strip()[:200],
+                    independent_of_model=True,
+                )
+            ]
+    return []
 
 
 NO_CHANGE_MARKER = re.compile(

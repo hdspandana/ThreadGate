@@ -68,7 +68,6 @@ class FieldDiff(BaseModel):
     risk: Literal["high", "medium", "low", "unknown"]
     pre_registered: bool = False
     note: str = ""
-    amount_value: float | None = None
 
 
 class Finding(BaseModel):

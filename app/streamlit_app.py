@@ -8,10 +8,8 @@ is the code, not the screen.
 from __future__ import annotations
 
 import html
-import json
 import os
 import sys
-import time
 from pathlib import Path
 
 import streamlit as st
@@ -20,9 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from threadgate.baseline import rules_only  # noqa: E402
-from threadgate.extract import get_extractor  # noqa: E402
-from threadgate.pipeline import email_to_text, run_case  # noqa: E402
 from threadgate.records import load_cases, load_vendors  # noqa: E402
+from threadgate.pipeline import run_case  # noqa: E402
 from threadgate.tokens import unique_accounts  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "eval"))

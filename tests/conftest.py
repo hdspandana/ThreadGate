@@ -24,12 +24,24 @@ def vendors():
 
 @pytest.fixture(scope="session")
 def cases():
+    """The primary pre-frozen benchmark."""
     return load_cases(ROOT / "data" / "cases" / "frozen_v1.json")
 
 
 @pytest.fixture(scope="session")
 def case_by_id(cases):
     return {c["id"]: c for c in cases}
+
+
+@pytest.fixture(scope="session")
+def cases_all():
+    """v1 plus the adversarial stress tranche - the combined stress set."""
+    return load_cases(ROOT / "data" / "cases" / "frozen_v2.json")
+
+
+@pytest.fixture(scope="session")
+def case_by_id_all(cases_all):
+    return {c["id"]: c for c in cases_all}
 
 
 @pytest.fixture(scope="session")

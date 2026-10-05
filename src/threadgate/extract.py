@@ -22,6 +22,7 @@ Three extractors are provided:
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 import time
@@ -112,6 +113,14 @@ def gemini_extract(nt: NormalizedText, vendor: Vendor, model: str | None = None)
         raise ExtractorError(
             "GEMINI_API_KEY is not set. Put it in .env (local) or in the deployment secret store."
         )
+
+    # The SDK emits a standing automatic-function-calling advisory on every
+    # generate_content call even when no tools are configured, which would scroll
+    # once per case through an evaluation run. Genuine API failures arrive as
+    # exceptions, which are retried and surfaced below, so raising the log level
+    # hides noise and nothing else.
+    for name in ("google_genai", "google_genai.models", "google.genai", "google"):
+        logging.getLogger(name).setLevel(logging.ERROR)
 
     model = model or os.environ.get("THREADGATE_MODEL", "gemini-2.5-flash")
     client = genai.Client(api_key=api_key)

@@ -16,7 +16,9 @@
         "account_type": "current",
         "country": "IN"
       },
-      "verified_domains": ["northwind.example"],
+      "verified_domains": [
+        "northwind.example"
+      ],
       "verified_contacts": {
         "remittance_email": "ar@northwind.example",
         "contact_person": "Meera Iyer",
@@ -33,8 +35,7 @@
       ],
       "payment_defaults": {
         "currency": "INR",
-        "payment_terms": "NET45",
-        "typical_max_amount": 500000
+        "payment_terms": "NET45"
       }
     },
     "V-1002": {
@@ -51,7 +52,9 @@
         "account_type": "current",
         "country": "IN"
       },
-      "verified_domains": ["kaverifreight.example"],
+      "verified_domains": [
+        "kaverifreight.example"
+      ],
       "verified_contacts": {
         "remittance_email": "billing@kaverifreight.example",
         "contact_person": "Anil Rao",
@@ -60,8 +63,7 @@
       "allowlisted_accounts": [],
       "payment_defaults": {
         "currency": "INR",
-        "payment_terms": "NET30",
-        "typical_max_amount": 250000
+        "payment_terms": "NET30"
       }
     }
   }

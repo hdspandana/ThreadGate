@@ -49,18 +49,6 @@ def normalize_value(field: str, value: str | None) -> str:
     return re.sub(r"\s+", " ", v).strip().lower()
 
 
-def _amount_value(value: str | None) -> float | None:
-    if not value:
-        return None
-    m = re.search(r"\d[\d,]*(?:\.\d+)?", str(value))
-    if not m:
-        return None
-    try:
-        return float(m.group(0).replace(",", ""))
-    except ValueError:
-        return None
-
-
 def diff_claims(claims: list[ValidatedClaim], vendor: Vendor) -> list[FieldDiff]:
     diffs: list[FieldDiff] = []
     for vc in claims:
@@ -95,23 +83,21 @@ def diff_claims(claims: list[ValidatedClaim], vendor: Vendor) -> list[FieldDiff]
                 note = "destination domain NOT on the verified list"
                 risk = "high"
 
-        amount_value: float | None = None
         if c.field == "amount":
             # An amount is per-invoice, not a standing field on the vendor
             # record, so quoting one is not a change to anything on file. A
             # payment reminder that mentions INR 320,000 is not asking for the
-            # record to change. The amount is carried through as a risk
-            # modifier instead: above the vendor's typical ceiling it escalates
-            # on its own (see policy.P_AMOUNT_ABOVE_CEILING).
-            amount_value = _amount_value(c.new_value)
-            ceiling = vendor.typical_max_amount()
+            # record to change.
+            #
+            # It is also deliberately NOT a risk signal. "This invoice is large"
+            # is a generic risk score, and a generic risk score is exactly what
+            # this project is not: it can be argued with, tuned until it stops
+            # firing, and it will eventually be waved through. The gate verifies
+            # the destination or it holds. Amount is recorded for the analyst
+            # and decides nothing.
             changed = False
             risk = "low"
-            note = (
-                f"{amount_value:,.0f} mentioned (typical ceiling {ceiling:,.0f})"
-                if amount_value is not None
-                else "amount mentioned"
-            )
+            note = "per-invoice amount; not a payment-destination field"
 
         if c.field == "currency" and changed:
             note = f"{old_norm} -> {new_norm}"
@@ -125,7 +111,6 @@ def diff_claims(claims: list[ValidatedClaim], vendor: Vendor) -> list[FieldDiff]
                 risk=risk,
                 pre_registered=pre_registered,
                 note=note,
-                amount_value=amount_value,
             )
         )
     return diffs

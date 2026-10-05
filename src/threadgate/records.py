@@ -35,6 +35,11 @@ def _digits(value: str) -> str:
     return "".join(ch for ch in str(value) if ch.isdigit())
 
 
+def normalize_code(value: str) -> str:
+    """Branch/routing codes compare on alphanumerics only, uppercased."""
+    return "".join(ch for ch in str(value).upper() if ch.isalnum())
+
+
 @dataclass
 class Vendor:
     data: dict
@@ -72,6 +77,29 @@ class Vendor:
     def account_status(self, value: str) -> str | None:
         return self._known_accounts.get(_digits(value))
 
+    def known_destination_codes(self) -> dict[str, set[str]]:
+        """Every branch/routing code associated with this vendor.
+
+        Includes codes attached to allowlisted alternate accounts, so switching
+        to a pre-registered account at a different branch is not treated as an
+        unknown destination.
+        """
+        out: dict[str, set[str]] = {"ifsc": set(), "swift": set(), "iban": set()}
+        for key in out:
+            current = self.current(key)
+            if current:
+                out[key].add(normalize_code(current))
+        for alt in self.data.get("allowlisted_accounts", []) or []:
+            for key in out:
+                value = alt.get(key)
+                if value:
+                    out[key].add(normalize_code(value))
+        return out
+
+    def is_known_destination_code(self, kind: str, value: str) -> bool:
+        codes = self.known_destination_codes().get(kind)
+        return bool(codes) and normalize_code(value) in codes
+
     def verified_domains(self) -> list[str]:
         return [d.lower() for d in self.data.get("verified_domains", []) or []]
 
@@ -84,13 +112,6 @@ class Vendor:
                 return True
         return False
 
-    def typical_max_amount(self) -> float:
-        try:
-            return float(self.data.get("payment_defaults", {}).get("typical_max_amount", 0))
-        except (TypeError, ValueError):
-            return 0.0
-
-
 def load_vendors(path: str | Path) -> dict[str, Vendor]:
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     return {vid: Vendor(data={**v, "vendor_id": vid}) for vid, v in raw["vendors"].items()}
@@ -99,3 +120,4 @@ def load_vendors(path: str | Path) -> dict[str, Vendor]:
 def load_cases(path: str | Path) -> list[dict]:
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     return raw["cases"]
+

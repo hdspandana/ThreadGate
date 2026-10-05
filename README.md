@@ -31,7 +31,7 @@ Paste in a vendor email. ThreadGate returns one of three decisions:
 | Decision | Meaning |
 | --- | --- |
 | **HOLD** | Cannot execute without out-of-band human verification. A diff against the record is shown, plus a callback checklist. |
-| **ALLOW** | The change is pre-registered or low-risk and the destination is already verified. |
+| **ALLOW** | The change is to a destination already on file as a pre-registered alternate, or to a field that is not a payment destination. |
 | **NO_CHANGE** | The email asks for nothing. Nothing to gate. |
 
 `HOLD` is a review state, not an accusation. Most held mail will turn out to be
@@ -74,97 +74,190 @@ monotone. Triggers can move a request towards `HOLD`; none can move it towards
 `ALLOW`. The model's contribution enters as verified claims, and a verified
 claim can add a hold trigger but can never remove one.
 
-**3. A measured comparison against a rules-only baseline**, and an adversarial
-harness that measures the system with the model working against it. Both are
-below, both are reproducible with one command.
+**3. A measured comparison against a rules-only baseline**, plus two adversarial
+harnesses that measure the system with the model working against it. All three
+are below and all are reproducible with one command.
 
-### The security model, in one sentence each
+### The security model
 
-- **AI-independent floor (I1).** If a number in the email looks like a bank
+Every invariant below is computed without looking at what the model said.
+
+- **I1a — Unknown account floor.** If a number in the email looks like a bank
   account and it is not the account on file and not a pre-registered alternate,
-  a human looks at it. The model is not asked.
-- **No-change must be evidenced (I2).** A `no_change` verdict is accepted only
-  if the model quotes the sentence that says so.
-- **The quote must support the verdict (I2b).** Added after an ablation found
-  the hole: a steered model can return `no_change` with a quote copied verbatim
-  from the email, which passes I2 because the words really are there. I2b
-  requires the quoted sentence to actually assert that nothing is changing.
-- **Change asserted, nothing verifiable (I3).** "Our details have changed, see
-  the attached PDF" is held as unverifiable, because there is no value in the
-  message to check.
+  a human looks at it.
+- **I1b — Unknown branch/routing code.** The same rule for IFSC, IBAN and SWIFT.
+  The closed-world rule covers every supported destination token the scanner can
+  see, not only account numbers.
+- **I2 — No-change must be evidenced.** A `no_change` verdict is accepted only if
+  the model quotes the sentence that says so.
+- **I2b — The quote must support the verdict.** Added after an ablation found the
+  hole: a steered model can return `no_change` with a quote copied verbatim from
+  the email, which passes I2 because the words really are there. I2b requires the
+  quoted sentence to actually assert that nothing is changing. Verdict and
+  justification have to agree.
+- **I3 — Change asserted, nothing verifiable.** "Our details have changed, see
+  the attached PDF" is held, because there is no value in the message to check.
+- **I4 — Destination out of band.** If the message says the account is in an
+  image, a PDF or a portal, the destination cannot be read and is held. See
+  below.
+
+### What the gate does not do
+
+- **No OCR, no attachment parsing, no image analysis.** Opening an
+  attacker-supplied file to inspect it is not a control, it is an exposure. When
+  the destination is not in the text, I4 holds it and the checklist tells the
+  analyst to get the value over the phone. TG-034 is exactly this case: the new
+  account is in an image, the only number in the text is the one already on
+  file, so nothing looks wrong until you notice that the destination was never
+  readable. It holds under every extractor, including a steered model.
+- **No risk score.** Invoice value, vendor age, payment history and similar
+  signals are deliberately absent. A numeric risk score can be argued with,
+  tuned until it stops firing, and eventually waved through. A destination check
+  cannot. An amount is reported to the analyst and decides nothing — the
+  amount-based ceiling heuristic that was here earlier was removed for this
+  reason.
+- **No URL scanning, threat intelligence, embeddings, or vector search.** None
+  of it is needed to answer the only question this gate asks.
+- **Scope is explicit in the code.** `DESTINATION_FIELDS` is what the closed-world
+  rule protects. Changes to instruction fields (currency, terms) and contact
+  fields (advice mailbox, contact person, phone) are reported and policy-checked,
+  but they are not what the gate is for, and none of them produce a score.
+  `tests/test_scope.py` fails the build if any of that drifts.
 
 ## Evaluation
 
-**40 frozen cases** (`data/cases/frozen_v2.json`), labelled with the decision a
-competent payments controller would reach from the email plus the vendor
-record. Composition: 11 true changes, 9 no-change/mention traps, 6 benign
-changes, 11 adversarial, 2 token-less requests, 1 forwarded-attack.
+Three sets, reported separately, because they mean different things.
 
-The set was written in two tranches. The first 20 were written alongside the
-system, which is a weakness, so the second 20 were written afterwards from
-attack patterns and from the failure modes I could already see in my own design
-— soft-hyphen splitting, fullwidth digits, a Cyrillic look-alike in the word
-"account", an injection hidden in a signature block, a new account placed in an
-image while the text shows the account already on file. `frozen_v1.json` is
-kept untouched so the difference is auditable.
+| Set | Cases | What it is | What may be quoted from it |
+| --- | --- | --- | --- |
+| `v1` | 20 | **Primary pre-frozen benchmark.** Written before any evaluation was run. | Performance claims. |
+| `stress` | 20 | **Adversarial stress set.** Written *after* the first evaluation, from attack patterns and from failure modes visible in the design. | Robustness only. |
+| `combined` | 40 | Both together. **A stress evaluation, not an unbiased benchmark.** | Nothing as a single accuracy number. |
 
 Two error types are counted separately, because they cost different things:
 
-- **unsafe** — a case that should be held was not. This is the only error that
-  can lose money.
+- **unsafe** — a case that should be held was not. The only error that can lose
+  money.
 - **false hold** — a case that should have gone through was sent to a human.
   Costs review time.
 
-| System | Accuracy | Unsafe | Safety | False holds |
-| --- | --- | --- | --- | --- |
-| Rules-only baseline (raw text) | 55.0% | 4 | 84.0% | 12 |
-| Rules-only baseline + normalisation | 65.0% | 0 | 100% | 12 |
-| **ThreadGate (Gemini)** | *pending — see below* | | | |
-| ThreadGate, model steered to say "no change" | 70.0% | **0** | 100% | 10 |
-| ThreadGate, steered model forging a verbatim quote | 70.0% | **0** | 100% | 10 |
+### Set 1 — frozen_v1, primary pre-frozen benchmark (20 cases)
 
-Reproduce:
+| System | Accuracy | Unsafe | False holds |
+| --- | --- | --- | --- |
+| Rules-only baseline (raw text) | 50.0% | 2 | 7 |
+| Rules-only baseline + normalisation | 60.0% | 0 | 7 |
+| **ThreadGate (Gemini)** | *pending — not yet run* | | |
+| ThreadGate, offline test double | 100.0% | 0 | 0 |
+| ThreadGate, model steered to say "no change" | 65.0% | **0** | 6 |
+| ThreadGate, steered model forging a verbatim quote | 65.0% | **0** | 6 |
+
+### Set 2 — stress additions, written after the first run (20 cases)
+
+| System | Accuracy | Unsafe | False holds |
+| --- | --- | --- | --- |
+| Rules-only baseline (raw text) | 60.0% | 2 | 5 |
+| Rules-only baseline + normalisation | 70.0% | 0 | 5 |
+| **ThreadGate (Gemini)** | *pending — not yet run* | | |
+| ThreadGate, offline test double | 100.0% | 0 | 0 |
+| ThreadGate, model steered to say "no change" | 75.0% | **0** | 4 |
+| ThreadGate, steered model forging a verbatim quote | 75.0% | **0** | 4 |
+
+### Set 3 — combined, stress evaluation only (40 cases)
+
+Not an unbiased benchmark. Shown for completeness and for the category view.
+
+| System | Accuracy | Unsafe | False holds |
+| --- | --- | --- | --- |
+| Rules-only baseline (raw text) | 55.0% | 4 | 12 |
+| Rules-only baseline + normalisation | 65.0% | 0 | 12 |
+| **ThreadGate (Gemini)** | *pending — not yet run* | | |
+| ThreadGate, offline test double | 100.0% | 0 | 0 |
+| ThreadGate, model steered to say "no change" | 70.0% | **0** | 10 |
+| ThreadGate, steered model forging a verbatim quote | 70.0% | **0** | 10 |
+
+### Where the reading is actually needed
+
+Per-category accuracy on the combined set. `u` counts unsafe outcomes.
+
+| Category | n | rules_raw | rules_norm | offline | compromised | compromised_q |
+| --- | --- | --- | --- | --- | --- | --- |
+| mention_vs_request | 6 | 17 | 17 | 100 | 50 | 50 |
+| negation | 2 | 0 | 0 | 100 | 0 | 0 |
+| cross_message | 3 | 67 | 67 | 100 | 67 | 67 |
+| obfuscation | 5 | 20 **(u4)** | 100 | 100 | 100 | 100 |
+| contradiction_ambiguity | 3 | 100 | 100 | 100 | 100 | 100 |
+| tokenless_implicit | 2 | 100 | 100 | 100 | 100 | 100 |
+| explicit_change | 6 | 100 | 100 | 100 | 100 | 100 |
+| prompt_injection | 5 | 100 | 100 | 100 | 100 | 100 |
+| social_engineering | 2 | 100 | 100 | 100 | 100 | 100 |
+| benign_preregistered | 2 | 0 | 0 | 100 | 0 | 0 |
+| benign_low_risk_field | 4 | 0 | 0 | 100 | 0 | 0 |
+
+Read that table carefully, because two rows flatter the baseline:
+
+- `prompt_injection`, `social_engineering` and `explicit_change` score 100% for
+  the rules baseline **because it holds everything**, not because it detects
+  anything. That is the same behaviour that produces 0% on the benign
+  categories. Accuracy averages the two out; the category view does not.
+- `obfuscation` is the one category where normalisation alone closes the gap:
+  20% with 4 unsafe becomes 100% with 0. Character-level evasion is a code
+  problem, and it is solved in `normalize.py`, not by the model.
+
+The categories where reading is genuinely required are **mention_vs_request**
+(talking about a destination vs asking for it to change), **negation** (reading
+"not" in context) and **cross_message** (which end of a thread is live). Those
+are the rows the model is for.
+
+### The baseline is not a strawman
+
+It is two rules: flag an 11–18 digit number that is not on file, and flag change
+language co-occurring with a payment noun. That is a fair stand-in for a
+first-pass control. It can never return `ALLOW`, so every legitimate change
+costs a manual review, and it cannot read negation, so "we are *not* changing
+our bank details" and "please change our bank details" are the same string to
+it. Running the same rules over normalised text is reported as a separate row so
+that the two effects do not get conflated.
+
+### The steered-model rows are the point
+
+A model that has been fully compromised — always reporting `no_change`, in one
+variant not even bothering to justify it, in the other forging a verbatim quote
+from the email — buys **zero** unsafe outcomes. It buys friction: accuracy falls
+and legitimate mail goes to a human instead. The gate fails closed. This is
+enforced by tests, not by hoping: `test_no_unsafe_outcomes_anywhere` runs both
+harnesses over both sets.
+
+### Reproducing
 
 ```bash
-python eval/run_eval.py --cases data/cases/frozen_v2.json \
-    --systems rules_raw rules_norm gemini compromised compromised_q
+python eval/run_eval.py                       # all three sets, no key needed
+python eval/run_eval.py --sets v1 --systems rules_raw rules_norm gemini
+python eval/run_eval.py --require-gemini      # exit 2 if the model cannot run
 ```
 
-**The baseline is not a strawman.** It is two rules: flag an 11–18 digit number
-that is not on file, and flag change language co-occurring with a payment noun.
-That is a fair stand-in for a first-pass control. It can never return `ALLOW`,
-so every legitimate change costs a manual review, and it cannot read negation,
-so "we are *not* changing our bank details" and "please change our bank
-details" are the same string to it. Running the same rules over normalised text
-is reported separately so the two effects do not get conflated: normalisation
-alone fixes the obfuscation cases and none of the intent cases.
-
-**The steered-model rows are the point.** A model that has been fully
-compromised — always reporting `no_change`, in one variant not even bothering
-to justify it, in the other forging a verbatim quote from the email — buys
-**zero** unsafe outcomes. It buys friction: accuracy falls to 65% and six
-legitimate emails go to a human instead. The gate fails closed.
-
-**ThreadGate (Gemini) is pending** because the evaluation must be run against
-the real model before any number is quoted here. The `offline` extractor in the
-repo is a deterministic test double so the test suite runs without a key; it is
-a rules engine with a JSON interface and its score is *not* the result being
-claimed.
+**With no `GEMINI_API_KEY` the live system is skipped, loudly.** It is never
+silently degraded into a fail-closed row that could be mistaken for a result.
 
 ## Honest limits
 
 Read this part.
 
-- **40 cases is a demo, not an evaluation.** It is a set I designed, and half of
-  it was written with the system already in front of me, so a high score on it
-  partly measures my ability to anticipate my own system. It is enough to show
-  the mechanism and to catch regressions. It is not evidence of a field error
-  rate, and none is claimed.
-- **The floor only covers the loss event.** I1 catches an unrecognised account
-  number. Risk that lives in other fields — a beneficiary rename, a currency
-  switch, a token-less request — is caught by the model's reading, and a steered
-  model can suppress it. I3 partially covers this. It is the real boundary of
-  the design.
+- **The `offline` row is a test double, not a model.** It is a rules engine with
+  a JSON interface so that tests and CI run without a key. Its 100% is a
+  regression guard and proves nothing about model performance. The `gemini` row
+  is the only one that does, and it is empty until a live evaluation has run.
+- **40 cases is a demo, not an evaluation.** Half the set was written with the
+  system already in front of me. It is enough to show the mechanism and to catch
+  regressions. It is not evidence of a field error rate, and none is claimed.
+- **The floor only covers destinations it can see.** I1a/I1b catch an
+  unrecognised account number or branch code. Risk in other fields — a
+  beneficiary rename, a currency switch — is caught by the model's reading, and
+  a steered model can suppress it. I3 and I4 partially cover this. It is the
+  real boundary of the design.
+- **A token-less request is the weakest case.** If the destination is outside the
+  text and the model also fails to report the change language, there is no
+  AI-independent evidence at all. Only the human attestation closes it.
 - **The vendor record is synthetic.** All vendors, accounts, IFSC codes and
   emails in `data/` are fabricated.
 - **No mail-flow integration.** This gates a pasted email. It is not wired to
@@ -178,15 +271,14 @@ Read this part.
 ```bash
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
-python scripts/kill_gate.py # go/no-go checks; read this before trusting anything
-python -m pytest            # 54 tests, no network needed
-python eval/run_eval.py --cases data/cases/frozen_v2.json --systems rules_raw rules_norm offline
+python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
+python -m pytest            # 69 tests, no network needed
+python eval/run_eval.py
 streamlit run app/streamlit_app.py
 ```
 
 Deployed: the key is read from Streamlit secrets (or `.env` locally) and is
-never written to the repo, logs, or the UI. See `docs/DEPLOY.md` for the
-Streamlit Community Cloud steps.
+never written to the repo, logs, or the UI. See `docs/DEPLOY.md`.
 
 ## Layout
 
@@ -197,14 +289,15 @@ src/threadgate/
   extract.py     the model call + the two adversarial harnesses
   validate.py    the closed-world evidence validator
   compare.py     field-level diff against the vendor record
-  invariants.py  I1/I2/I2b/I3 - the checks that never see the model
+  invariants.py  I1a/I1b/I2/I2b/I3/I4 - never consult the model
   policy.py      the monotone decision rule
   baseline.py    rules-only baseline, for the measured comparison
   pipeline.py    orchestration
-data/cases/      frozen case set
+data/cases/      frozen_v1 (benchmark), additions (stress), categories.json
 data/records/    synthetic vendor master
 eval/            evaluation harness and reports
 app/             Streamlit demo
+docs/            deployment and submission notes
 ```
 
 ## Track

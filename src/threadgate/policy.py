@@ -17,12 +17,20 @@ Decision surface:
 from __future__ import annotations
 
 from .invariants import (
-    account_floor,
     authentication_findings,
     change_act_detected,
+    destination_floor,
     no_change_justified,
+    out_of_band_destination,
     unverifiable_finding,
 )
+
+# What this gate is for. Anything not in DESTINATION_FIELDS is reported to the
+# analyst but is not what the closed-world rule protects, and none of it feeds a
+# numeric risk score.
+DESTINATION_FIELDS = {"account_number", "iban", "swift", "ifsc", "beneficiary_name"}
+INSTRUCTION_FIELDS = {"currency", "amount", "payment_terms"}
+CONTACT_FIELDS = {"remittance_email", "contact_person", "contact_phone"}
 from .normalize import NormalizedText
 from .records import Vendor
 from .schema import Decision, FieldDiff, Finding
@@ -30,7 +38,13 @@ from .tokens import Token
 from .validate import ValidationResult
 
 
-def _checklist(vendor: Vendor, diffs: list[FieldDiff], floor: list[Finding], unverifiable: bool) -> list[str]:
+def _checklist(
+    vendor: Vendor,
+    diffs: list[FieldDiff],
+    floor: list[Finding],
+    unverifiable: bool,
+    out_of_band: bool = False,
+) -> list[str]:
     items: list[str] = []
     phone = vendor.current("contact_phone")
     items.append(
@@ -55,8 +69,13 @@ def _checklist(vendor: Vendor, diffs: list[FieldDiff], floor: list[Finding], unv
             items.append("Re-issue the invoice from the vendor's billing system, not from this email.")
         elif d.field == "remittance_email":
             items.append("Verify the new advice mailbox through the vendor's primary contact.")
+    if out_of_band:
+        items.append(
+            "Do not open the attachment or image. Ask the vendor to read the destination "
+            "out over the phone, or retrieve it from a channel you initiate."
+        )
     if unverifiable:
-        items.append("Ask for the new details through a channel you initiate; do not open the attachment.")
+        items.append("Ask for the new details through a channel you initiate.")
     items.append("Two-person approval before the record is updated, and re-confirm on the next payment run.")
     return list(dict.fromkeys(items))
 
@@ -72,8 +91,12 @@ def decide(
 ) -> Decision:
     findings: list[Finding] = list(authentication_findings(email or {}))
 
-    floor = account_floor(tokens, vendor)
+    floor = destination_floor(tokens, vendor)
     findings.extend(floor)
+
+    # I4 - the destination is not in this message at all.
+    out_of_band = out_of_band_destination(nt.text)
+    findings.extend(out_of_band)
 
     changed = [d for d in diffs if d.changed]
     high = [d for d in changed if d.risk == "high"]
@@ -103,22 +126,6 @@ def decide(
             )
         )
         reasons.append("medium_risk_field_change:" + ",".join(sorted({d.field for d in medium})))
-
-    ceiling = vendor.typical_max_amount()
-    over_ceiling = [
-        d for d in diffs if d.amount_value is not None and ceiling and d.amount_value > ceiling
-    ]
-    if over_ceiling:
-        findings.append(
-            Finding(
-                code="P_AMOUNT_ABOVE_CEILING",
-                severity="hold",
-                message="Value above this vendor's typical ceiling ("
-                + f"{ceiling:,.0f}): "
-                + ", ".join(f"{d.amount_value:,.0f}" for d in over_ceiling),
-            )
-        )
-        reasons.append("amount_above_typical_ceiling")
 
     if floor:
         reasons.append("unknown_account_token")
@@ -169,8 +176,10 @@ def decide(
     for f in floor:
         reasons.append("I1_UNKNOWN_ACCOUNT_TOKEN")
 
-    if high or medium or floor or unverifiable or over_ceiling:
+    if high or medium or floor or unverifiable or out_of_band:
         decision = "HOLD"
+        if out_of_band:
+            reasons.append("destination_out_of_band")
     elif low:
         decision = "ALLOW"
         reasons.append("verified_low_risk_change:" + ",".join(sorted({d.field for d in low})))
@@ -184,5 +193,7 @@ def decide(
         diffs=diffs,
         findings=findings,
         attestation_required=(decision == "HOLD"),
-        checklist=_checklist(vendor, diffs, floor, unverifiable) if decision == "HOLD" else [],
+        checklist=_checklist(vendor, diffs, floor, unverifiable, bool(out_of_band))
+        if decision == "HOLD"
+        else [],
     )
