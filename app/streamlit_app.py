@@ -8,6 +8,7 @@ is the code, not the screen.
 from __future__ import annotations
 
 import html
+import json
 import os
 import sys
 from pathlib import Path
@@ -23,12 +24,20 @@ from threadgate.pipeline import run_case  # noqa: E402
 from threadgate.tokens import unique_accounts  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "eval"))
-from run_eval import metrics, run_system  # noqa: E402
-
-CASE_SETS = {
-    "frozen_v2 (40 cases)": ROOT / "data" / "cases" / "frozen_v2.json",
-    "frozen_v1 (20 cases)": ROOT / "data" / "cases" / "frozen_v1.json",
-}
+# The case-set labels, the system list and the disclaimers are imported from
+# the evaluation harness rather than restated here, so the screen and the
+# command line cannot drift apart.
+from run_eval import (  # noqa: E402
+    ALL_SYSTEMS,
+    CATEGORIES,
+    DISCLAIMER,
+    MODEL_SYSTEMS,
+    SETS,
+    by_category,
+    gemini_available,
+    metrics,
+    run_system,
+)
 
 try:
     from dotenv import load_dotenv
@@ -197,6 +206,22 @@ def render(result, baseline_decision: str) -> None:
             st.caption("; ".join(result.notes))
 
 
+# What each harness row means. Kept next to the table that displays them so a
+# reviewer cannot read an ablation as an opponent.
+SYSTEM_LABELS = {
+    "rules_raw": "rules on raw text - no model, no normalisation",
+    "rules_norm": "rules on normalised text - no model",
+    "ai_only": "the model decides - evaluation baseline only, never a code path in the gate",
+    "gemini": "ThreadGate - the model interprets, code decides",
+    "compromised": "ThreadGate, with the model steered to always report no change",
+    "compromised_q": "ThreadGate, with the model fabricating a verbatim quote for a claim "
+    "that is not in the email",
+    "hybrid_no_scan": "ThreadGate, ablation - independent destination scan removed",
+    "hybrid_no_validation": "ThreadGate, ablation - evidence validation removed",
+    "offline": "deterministic test double - not a model, and never quoted as a result",
+}
+
+
 # ---------------------------------------------------------------------------
 # page
 # ---------------------------------------------------------------------------
@@ -217,8 +242,11 @@ st.markdown(
 )
 
 configured, status = key_status()
-case_set_name = st.sidebar.radio("Case set", list(CASE_SETS), index=0)
-CASES = load_cases(CASE_SETS[case_set_name])
+case_set_key = st.sidebar.radio(
+    "Case set", list(SETS), index=0, format_func=lambda k: SETS[k]["title"]
+)
+st.sidebar.caption(SETS[case_set_key]["caveat"])
+CASES = load_cases(SETS[case_set_key]["path"])
 mode = st.sidebar.selectbox(
     "Extractor",
     ["gemini", "offline", "compromised", "compromised_quote"],
@@ -283,16 +311,26 @@ st.caption(
     "`unsafe` counts cases that should be held but were not - the only error that can lose money. "
     "`false hold` counts cases a human was asked to review unnecessarily - it costs time, not money."
 )
-if st.button(f"Run all {len(CASES)} cases with `{mode}`", type="secondary"):
-    systems = ["rules_raw", "rules_norm"] + ([mode] if mode != "gemini" else []) + ["compromised", "compromised_q"]
-    if mode == "gemini":
-        systems = ["rules_raw", "rules_norm", "gemini", "compromised", "compromised_q"]
+with st.expander("What each system is"):
+    for name in ALL_SYSTEMS:
+        st.markdown(f"- `{name}` - {SYSTEM_LABELS[name]}")
+
+if st.button(f"Run {len(CASES)} cases across every system", type="secondary"):
+    have_key = gemini_available()
+    systems = [s for s in ALL_SYSTEMS if s != "offline"]
+    skipped = [s for s in systems if s in MODEL_SYSTEMS and not have_key]
+    systems = [s for s in systems if s not in skipped]
+
     rows = []
+    results_by_system: dict[str, list] = {}
+    metrics_by_system: dict[str, dict] = {}
     progress = st.progress(0.0)
-    for i, sysname in enumerate(dict.fromkeys(systems)):
+    for i, sysname in enumerate(systems):
         with st.spinner(f"running {sysname}..."):
             res = run_system(sysname, CASES, VENDORS)
             m = metrics(res)
+            results_by_system[sysname] = res
+            metrics_by_system[sysname] = m
             rows.append(
                 {
                     "system": sysname,
@@ -302,10 +340,39 @@ if st.button(f"Run all {len(CASES)} cases with `{mode}`", type="secondary"):
                     "false holds": m["false_holds"],
                 }
             )
-        progress.progress((i + 1) / len(dict.fromkeys(systems)))
+        progress.progress((i + 1) / len(systems))
+
     st.table(rows)
+
+    for s, m in zip(systems, rows):
+        if m["unsafe"]:
+            ids = ", ".join(metrics_by_system[s]["missed_hold_ids"])
+            st.error(f"`{s}` released {m['unsafe']} case(s) that should have been held: {ids}")
+
+    if skipped:
+        st.warning(
+            "Skipped without an API key: " + ", ".join(f"`{s}`" for s in skipped) + ". "
+            "Add `GEMINI_API_KEY` to the deployment secret store and re-run to fill in the "
+            "model rows. No number is shown for a system that did not run."
+        )
+
+    assignments = json.loads(CATEGORIES.read_text(encoding="utf-8"))["assignments"]
+    per_cat = {s: by_category(r, assignments) for s, r in results_by_system.items()}
+    cat_rows = []
+    for cat in sorted({c for s in systems for c in per_cat[s]}):
+        row = {"category": cat, "n": per_cat[systems[0]][cat]["n"]}
+        for s in systems:
+            m = per_cat[s].get(cat)
+            row[s] = f"{m['accuracy']:.0f} (u{m['unsafe_missed_holds']})" if m else "-"
+        cat_rows.append(row)
+    st.markdown("**Per-category accuracy** - `u` is unsafe: a hold that was released")
+    st.table(cat_rows)
     st.caption(
-        "`compromised` and `compromised_q` are adversarial harnesses: the model is steered to always "
-        "report no change. They should show zero unsafe and a pile of false holds - the gate failing "
-        "closed rather than open."
+        "Categories were assigned after both case sets were frozen, so they describe where each "
+        "system helps or fails; they do not change any expected decision. The point of this table "
+        "is the spread: the model earns its place on negation, mention-versus-request and "
+        "token-less requests, and it contributes nothing on obfuscation, where the deterministic "
+        "scanner carries the case."
     )
+    with st.expander("Read this before quoting any number"):
+        st.code(DISCLAIMER)

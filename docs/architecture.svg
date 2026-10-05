@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 780" width="1160" height="780" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif">
+  <title>ThreadGate architecture — verify the change, not the message</title>
+  <desc>Untrusted messages are interpreted by an AI that has no verdict field. Its structured output crosses a trust boundary as evidence only. A deterministic scanner, a closed-world evidence validator, a trusted reference and a comparator feed a monotone policy that emits CLEAR, REVIEW or HOLD. The AI has no path to the final decision.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#37474f"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c1121f"/>
+    </marker>
+    <style>
+      .zone { stroke-width: 2; fill-opacity: 1; }
+      .box { fill: #ffffff; stroke: #455a64; stroke-width: 1.4; rx: 6; }
+      .box-ai { fill: #ffffff; stroke: #c1121f; stroke-width: 1.6; rx: 6; }
+      .box-policy { fill: #14213d; stroke: #14213d; stroke-width: 1.4; rx: 6; }
+      .t { fill: #14213d; font-size: 15px; font-weight: 600; }
+      .s { fill: #5c6b7a; font-size: 11.5px; }
+      .s-ai { fill: #a3232e; font-size: 11.5px; font-style: italic; }
+      .zone-label { font-size: 12px; font-weight: 700; letter-spacing: 1.2px; }
+      .flow { stroke: #37474f; stroke-width: 1.8; fill: none; marker-end: url(#arrow); }
+      .flow-side { stroke: #37474f; stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; marker-end: url(#arrow); }
+      .flow-blocked { stroke: #c1121f; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+      .out-t { font-size: 15px; font-weight: 700; fill: #ffffff; }
+      .out-s { font-size: 10.5px; fill: #ffffff; fill-opacity: .85; }
+      .note { fill: #37474f; font-size: 11px; }
+    </style>
+  </defs>
+
+  <rect width="1160" height="780" fill="#ffffff"/>
+
+  <text x="30" y="34" font-size="21" font-weight="700" fill="#14213d">ThreadGate — verify the change, not the message</text>
+  <text x="30" y="56" class="s">AI interprets the email. Code verifies the change against the record. A human attests before anything executes.</text>
+
+  <!-- ============ UNTRUSTED ZONE ============ -->
+  <rect class="zone" x="24" y="76" width="452" height="470" rx="10" fill="#fff6f6" stroke="#e0a0a0"/>
+  <text x="40" y="100" class="zone-label" fill="#c1121f">UNTRUSTED — ATTACKER-CONTROLLED</text>
+
+  <rect class="box" x="60" y="116" width="380" height="64" rx="6"/>
+  <text x="76" y="140" class="t">Messages</text>
+  <text x="76" y="158" class="s">email, reply chain, forwarded content</text>
+  <text x="76" y="173" class="s">treated as data, never as instructions</text>
+
+  <rect class="box-ai" x="60" y="206" width="380" height="72" rx="6"/>
+  <text x="76" y="230" class="t">Untrusted AI Interpreter</text>
+  <text x="76" y="249" class="s">Gemini — extracts what the email asks for</text>
+  <text x="76" y="267" class="s-ai">no verdict field: it cannot approve anything</text>
+
+  <rect class="box" x="60" y="316" width="380" height="62" rx="6"/>
+  <text x="76" y="340" class="t">Structured Interpretation</text>
+  <text x="76" y="359" class="s">claims with verbatim quotes; not a decision</text>
+
+  <text x="76" y="416" class="s">Adversarial harnesses replace this box with a model</text>
+  <text x="76" y="433" class="s">steered to always answer “no change”.</text>
+  <text x="76" y="464" class="s">Normalisation runs before the model and independently</text>
+  <text x="76" y="481" class="s">of it: zero-width spaces, homoglyphs, fullwidth digits.</text>
+
+  <!-- ============ TRUST BOUNDARY ============ -->
+  <line x1="512" y1="86" x2="512" y2="700" stroke="#c1121f" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="524" y="704" class="zone-label" fill="#c1121f">TRUST BOUNDARY</text>
+
+  <!-- blocked path: AI -> policy -->
+  <path class="flow-blocked" d="M 440 270 H 500" marker-end="url(#arrow-red)"/>
+  <circle cx="512" cy="270" r="15" fill="#ffffff" stroke="#c1121f" stroke-width="2.4"/>
+  <line x1="502" y1="260" x2="522" y2="280" stroke="#c1121f" stroke-width="2.6"/>
+  <text x="536" y="266" font-size="12.5" font-weight="700" fill="#c1121f">NO PATH</text>
+  <text x="536" y="282" class="s-ai">the model cannot reach the verdict</text>
+
+  <!-- ============ TRUSTED ZONE ============ -->
+  <rect class="zone" x="536" y="76" width="600" height="470" rx="10" fill="#f3fbf6" stroke="#8fc7a6"/>
+  <text x="552" y="100" class="zone-label" fill="#1b7f4f">DETERMINISTIC — CODE — NEVER CONSULTS THE MODEL FOR THE VERDICT</text>
+
+  <rect class="box" x="556" y="116" width="200" height="58" rx="6"/>
+  <text x="568" y="139" class="t">Trusted Reference</text>
+  <text x="568" y="158" class="s">vendor master record</text>
+
+  <rect class="box" x="836" y="116" width="280" height="58" rx="6"/>
+  <text x="848" y="139" class="t">Destination Scanner</text>
+  <text x="848" y="158" class="s">accounts, IFSC / IBAN / SWIFT — spans</text>
+
+  <rect class="box" x="676" y="316" width="330" height="62" rx="6"/>
+  <text x="688" y="340" class="t">Evidence Validator</text>
+  <text x="688" y="359" class="s">quote must be verbatim; value must exist</text>
+
+  <rect class="box" x="676" y="404" width="330" height="62" rx="6"/>
+  <text x="688" y="428" class="t">Comparator</text>
+  <text x="688" y="447" class="s">field-level diff against the reference</text>
+
+  <rect class="box-policy" x="676" y="492" width="480" height="46" rx="6"/>
+  <text x="688" y="521" font-size="15" font-weight="700" fill="#ffffff">Policy — monotone: triggers can only escalate</text>
+
+  <!-- flows -->
+  <path class="flow" d="M 250 174 V 200"/>
+  <path class="flow" d="M 250 278 V 310"/>
+  <path class="flow" d="M 440 347 H 672"/>
+  <path class="flow" d="M 841 378 V 400"/>
+  <path class="flow" d="M 841 466 V 488"/>
+  <!-- side inputs: reference and scanner feed the deterministic chain, never the reverse -->
+  <path class="flow-side" d="M 656 174 V 435 H 672"/>
+  <path class="flow-side" d="M 1040 174 V 490"/>
+
+  <text x="576" y="430" class="note">reference</text>
+  <text x="1050" y="330" class="note">scanner result —</text>
+  <text x="1050" y="345" class="note">never derived</text>
+  <text x="1050" y="360" class="note">from the model</text>
+
+  <!-- ============ OUTCOMES ============ -->
+  <text x="30" y="596" class="s" font-size="12">Emitted decisions — the gate never returns a probability, a score, or an approval from the model.</text>
+
+  <rect x="676" y="628" width="140" height="62" rx="6" fill="#1b7f4f" stroke="#1b7f4f"/>
+  <text x="746" y="652" class="out-t" text-anchor="middle">CLEAR</text>
+  <text x="746" y="670" class="out-s" text-anchor="middle">pre-registered or</text>
+  <text x="746" y="683" class="out-s" text-anchor="middle">non-destination change</text>
+
+  <rect x="826" y="628" width="140" height="62" rx="6" fill="#b26a00" stroke="#b26a00"/>
+  <text x="896" y="652" class="out-t" text-anchor="middle">REVIEW / HOLD</text>
+  <text x="896" y="670" class="out-s" text-anchor="middle">human verifies</text>
+  <text x="896" y="683" class="out-s" text-anchor="middle">out of band</text>
+
+  <rect x="976" y="628" width="140" height="62" rx="6" fill="#37507a" stroke="#37507a"/>
+  <text x="1046" y="652" class="out-t" text-anchor="middle">NO CHANGE</text>
+  <text x="1046" y="670" class="out-s" text-anchor="middle">nothing requested,</text>
+  <text x="1046" y="683" class="out-s" text-anchor="middle">nothing to gate</text>
+
+  <path class="flow" d="M 746 538 V 624"/>
+  <path class="flow" d="M 896 538 V 624"/>
+  <path class="flow" d="M 1046 538 V 624"/>
+
+  <text x="30" y="716" class="s">Legend — emitted strings in code: CLEAR = ALLOW, REVIEW/HOLD = HOLD, NO CHANGE = NO_CHANGE.</text>
+  <text x="30" y="736" class="s">Not implemented, and not claimed: attestation replay protection, reference version lineage, OCR or attachment inspection.</text>
+  <text x="30" y="756" class="s">The system has no risk score. An invoice amount is reported to the analyst and decides nothing.</text>
+</svg>
