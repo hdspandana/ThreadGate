@@ -180,6 +180,10 @@ def main() -> int:
     args = ap.parse_args()
 
     systems = [s for s in args.systems if s in ALL_SYSTEMS]
+    if args.require_gemini and MODEL_SYSTEM not in systems:
+        # Otherwise `--require-gemini` on its own would exit 2 for a model it
+        # never asked for, which is the wrong failure.
+        systems.append(MODEL_SYSTEM)
     skipped: list[str] = []
     invalid_systems: set[str] = set()
 
