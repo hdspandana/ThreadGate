@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from .invariants import (
     alternate_routing_floor,
+    confirmation_request_justified,
     authentication_findings,
     change_act_detected,
     destination_floor,
@@ -171,7 +172,25 @@ def decide(
     if validation.intent_evidenced and validation.intent_span_norm:
         quote = nt.text[validation.intent_span_norm[0]: validation.intent_span_norm[1]]
     if intent == "confirmation_request":
-        no_change_accepted = validation.intent_evidenced
+        # I2c. Not simply `validation.intent_evidenced`: that accepted any
+        # verbatim quote, so a steered model could label the sentence asking
+        # for the change as a request to confirm and clear it.
+        no_change_accepted = validation.intent_evidenced and confirmation_request_justified(quote)
+        if validation.intent_evidenced and not confirmation_request_justified(quote):
+            findings.append(
+                Finding(
+                    code="I2C_CONFIRMATION_REQUEST_NOT_JUSTIFIED",
+                    severity="info",
+                    message=(
+                        "The model reports this as a request to confirm details, but the "
+                        "sentence it quoted does not ask for confirmation, or asks for a "
+                        "change at the same time. The verdict is not accepted and the "
+                        "request falls through to the deterministic change-act check."
+                    ),
+                    snippet=quote[:200],
+                    span_norm=validation.intent_span_norm,
+                )
+            )
     elif intent == "no_change":
         no_change_accepted = validation.intent_evidenced and no_change_justified(quote)
         if validation.intent_evidenced and not no_change_justified(quote):

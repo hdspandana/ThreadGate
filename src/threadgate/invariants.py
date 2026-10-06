@@ -17,6 +17,10 @@ I3 - Change act with nothing verifiable. If the email asserts a change in
      payment language but the validator admitted no values, hold it. This is the
      token-less request: "new details are in the attached PDF".
 
+I2c - A "confirmation_request" verdict must be justified the same way a
+      "no_change" one is: the quote has to ask us to confirm something, and
+      must not issue a change in the same breath.
+
 I5 - Pre-registered alternate in a routing instruction. I1 holds on
      destinations we do not recognise and is silent on ones we do, which is
      right for that question but leaves the decision to the model whenever the
@@ -404,6 +408,51 @@ def no_change_justified(quote: str) -> bool:
     is changing, however verbatim it is.
     """
     return bool(NO_CHANGE_PHRASE.search(quote or ""))
+
+
+# I2c. A quote offered for a "they are only asking us to confirm" verdict has
+# to be a request for confirmation, and not also an instruction to change
+# something.
+#
+# `confirmation_request` used to be accepted on any verbatim quote at all. It
+# was the one intent that skipped the justification check entirely, which made
+# it the cheapest route past the gate: a steered model did not have to find a
+# sentence claiming nothing was changing, only any sentence it could label as a
+# request for confirmation. Pointing it at the sentence that actually asks for
+# the change returned CLEAR, with the reason recorded as `no_change_evidenced`.
+CONFIRMATION_PHRASE = re.compile(
+    r"\b(?:confirm|confirmation|verif|check|clarif|let\s+us\s+know|"
+    r"as\s+per\s+your\s+records|is\s+this\s+(?:right|correct))\w*",
+    re.IGNORECASE,
+)
+
+# The change verbs from CHANGE_WORD minus `correct`. "Our correct bank details"
+# is not a request to correct anything - it is the word being used as an
+# adjective, and `change_act_detected` accepts it only because that function
+# exists to escalate and a crude detector there costs review time rather than
+# safety. Using it here would reject TG-011, whose whole content is a request to
+# confirm that the details on file are correct.
+CHANGE_DIRECTIVE = re.compile(
+    r"\b(?:updat|chang|amend|revis|replac|switch|modif|transfer|"
+    r"use\s+the\s+following|with\s+effect|w\.e\.f|effective)\w*\b",
+    re.IGNORECASE,
+)
+
+
+def confirmation_request_justified(quote: str) -> bool:
+    """I2c. Does the quote ask us to confirm, without asking us to change?
+
+    Both halves matter. "Can you confirm you have our correct bank details on
+    file?" is a confirmation request and nothing else. "Please confirm you will
+    update our beneficiary name" asks for confirmation and issues a change in
+    the same breath, and the confirmation framing does not make the change go
+    away.
+    """
+    if not (quote or "").strip():
+        return False
+    if not CONFIRMATION_PHRASE.search(quote):
+        return False
+    return not (CHANGE_DIRECTIVE.search(quote) and ENTITY_WORD.search(quote))
 
 
 def change_act_detected(norm_text: str) -> bool:
