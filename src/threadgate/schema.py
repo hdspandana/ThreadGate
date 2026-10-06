@@ -35,7 +35,10 @@ CHANGE_FIELDS = Literal[
 class Claim(BaseModel):
     field: CHANGE_FIELDS
     old_value: str | None = Field(
-        default=None, description="Current value on file, if the email states or implies one."
+        default=None,
+        description="A previous or current value that the EMAIL explicitly states. It is "
+        "NOT the value on file: the model is not shown the record and must never "
+        "guess it. Leave null unless the email itself states the value.",
     )
     new_value: str | None = Field(default=None, description="Requested new value, verbatim from the email.")
     evidence: str = Field(default="", description="Verbatim quote from the email supporting this claim.")

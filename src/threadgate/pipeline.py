@@ -22,7 +22,7 @@ from .attestation import (
 )
 from .clock import SystemClock
 from .compare import diff_claims
-from .extract import get_extractor
+from .extract import _call_extractor, get_extractor
 from .normalize import NormalizedText, normalize_text
 from .policy import decide
 from .records import Vendor
@@ -142,7 +142,10 @@ def run_case(
 
     extract = extractor_fn or get_extractor(extractor_mode)
     try:
-        extraction = extract(nt, vendor)
+        # `_call_extractor` passes a production model extractor the email and
+        # nothing else; test doubles and adversarial harnesses also get the
+        # record, because simulating a reading of it is what they are for.
+        extraction = _call_extractor(extract, nt, vendor)
     except Exception as exc:  # noqa: BLE001
         error = f"extractor_error: {exc}"
         extraction = Extraction(intent="unverifiable", intent_evidence="", summary=error)

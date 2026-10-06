@@ -124,7 +124,7 @@ def test_no_key_raises_rather_than_returning_a_fake_result(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     with pytest.raises(ExtractorError, match="not set"):
-        gemini_extract(_nt(CASES["TG-001"]), VENDORS["V-1001"])
+        gemini_extract(_nt(CASES["TG-001"]))
 
 
 def test_no_key_means_the_pipeline_holds_and_never_clears(monkeypatch):
@@ -141,20 +141,20 @@ def test_no_key_means_the_pipeline_holds_and_never_clears(monkeypatch):
 # ---------------------------------------------------------------------------
 def test_key_present_parses_a_valid_response(gemini):
     gemini(lambda: _Resp(text=_valid_payload()))
-    ex = gemini_extract(_nt(CASES["TG-001"]), VENDORS["V-1001"])
+    ex = gemini_extract(_nt(CASES["TG-001"]))
     assert ex.intent == "change_request"
     assert ex.claims and ex.claims[0].new_value.endswith("9821")
 
 
 def test_fenced_json_is_unwrapped(gemini):
     gemini(lambda: _Resp(text="```json\n" + _valid_payload() + "\n```"))
-    ex = gemini_extract(_nt(CASES["TG-001"]), VENDORS["V-1001"])
+    ex = gemini_extract(_nt(CASES["TG-001"]))
     assert ex.intent == "change_request"
 
 
 def test_sdk_parsed_object_is_accepted(gemini):
     gemini(lambda: _Resp(parsed=json.loads(_valid_payload())))
-    ex = gemini_extract(_nt(CASES["TG-001"]), VENDORS["V-1001"])
+    ex = gemini_extract(_nt(CASES["TG-001"]))
     assert ex.intent == "change_request"
 
 
@@ -177,7 +177,7 @@ FAILURES = {
 def test_a_failing_model_call_raises_extractor_error(gemini, mode):
     sleeps = gemini(FAILURES[mode])
     with pytest.raises(ExtractorError):
-        gemini_extract(_nt(CASES["TG-001"]), VENDORS["V-1001"])
+        gemini_extract(_nt(CASES["TG-001"]))
     # it retried rather than giving up on the first hiccup
     assert len(sleeps) == 3, sleeps
 
