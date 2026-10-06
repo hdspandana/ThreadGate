@@ -42,8 +42,9 @@ from threadgate.normalize import normalize_text  # noqa: E402
 # The gate judges a frozen corpus, so it pins the date rather than reading the
 # wall clock. Otherwise it would start failing on its own the day the vendor
 # records pass their confirmation window - a steered model would begin
-# producing REVIEW where it used to produce CLEAR - and a go/no-go check that
-# fails because of the calendar is worse than no check at all.
+# producing REVIEW where it used to produce CLEAR, and separately the reference
+# would drift from CURRENT to STALE - and a go/no-go check that fails because of
+# the calendar is worse than no check at all.
 GATE_AS_OF = "2026-10-06"
 CLOCK = fixed(GATE_AS_OF)
 
@@ -171,17 +172,30 @@ def main() -> int:
     check("out-of-band does not fire on mail that should clear", not benign_fires, str(benign_fires))
 
     # 8 - no unsafe outcome anywhere
-    unsafe, allows = [], []
+    #
+    # A steered model may make the gate stricter than the label - friction costs
+    # a human's time - but never more permissive. Two directions to check:
+    #
+    #   unsafe             expected HOLD, got something softer
+    #   non_clear_release  expected REVIEW or HOLD, got CLEAR
+    #
+    # The second used to be `decision == "REVIEW"`, which passed only because
+    # the two pre-registered-alternate cases were silently CLEAR under both
+    # steered harnesses: it asserted the bypass. REVIEW is a legitimate outcome
+    # when the label says REVIEW; CLEAR is never a legitimate outcome when the
+    # label does not.
+    unsafe, releases = [], []
     for name in ("frozen_v1.json", "frozen_v2.json"):
         for c in load_cases(ROOT / "data" / "cases" / name):
             for fn in (compromised_extract, compromised_quote_extract):
                 r = run_case(c, vendors, extractor_fn=fn, clock=CLOCK)
                 if r.unsafe:
                     unsafe.append(f"{name}:{c['id']}")
-                if r.decision.decision == "REVIEW":
-                    allows.append(f"{name}:{c['id']}")
+                if r.non_clear_release:
+                    releases.append(f"{name}:{c['id']}")
     check("no released hold under either steered model, all sets", not unsafe, str(unsafe))
-    check("a steered model never produces a REVIEW", not allows, str(allows))
+    check("a steered model never buys a CLEAR the policy does not allow",
+          not releases, str(releases))
 
     # 9 - category coverage
     cats = json.loads((ROOT / "data" / "cases" / "categories.json").read_text(encoding="utf-8"))

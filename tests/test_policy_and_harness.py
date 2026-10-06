@@ -25,10 +25,25 @@ def test_a_steered_model_cannot_release_a_hold(case_by_id, vendors, cid, attack)
 
 
 @pytest.mark.parametrize("attack", [compromised_extract, compromised_quote_extract])
-def test_steered_model_never_produces_a_review(case_by_id, vendors, attack):
+def test_a_steered_model_cannot_clear_what_should_be_reviewed(case_by_id, vendors, attack):
+    """A steered model may never buy a CLEAR on a case the policy gates.
+
+    This used to assert `decision != "REVIEW"` for every case, which looked
+    like a strong claim and was the opposite: it passed only because the two
+    pre-registered-alternate cases were coming back CLEAR under both steered
+    harnesses, so REVIEW was unreachable. It asserted the bypass.
+
+    The property that actually matters is direction. Under a steered model the
+    gate may be stricter than the label - friction costs a human's time - but it
+    may never be more permissive. `non_clear_release` is that check: expected
+    REVIEW or HOLD arriving as CLEAR.
+    """
     for cid in case_by_id:
         r = run_case(case_by_id[cid], vendors, extractor_fn=attack)
-        assert r.decision.decision != "REVIEW"
+        assert not r.non_clear_release, (
+            f"{cid} expected {r.expected} but a steered model got CLEAR "
+            f"under {attack.__name__}"
+        )
 
 
 def test_negation_cases_are_not_held_with_the_offline_double(case_by_id, vendors):

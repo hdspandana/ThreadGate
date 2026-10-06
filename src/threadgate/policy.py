@@ -19,6 +19,7 @@ Decision surface:
 from __future__ import annotations
 
 from .invariants import (
+    alternate_routing_floor,
     authentication_findings,
     change_act_detected,
     destination_floor,
@@ -107,8 +108,13 @@ def decide(
     """
     findings: list[Finding] = list(authentication_findings(email or {}))
 
+    # I1 and I5 are the same mechanism - the closed-world scan - so the
+    # destination-scan ablation removes both. I5 is part of what the scan buys,
+    # not a property of the model, and leaving it on would understate the
+    # ablation and flatter the no-scan variant.
     if ablation is not None and ablation.disable_destination_scan:
         floor: list[Finding] = []
+        alternate: list[Finding] = []
         findings.append(
             Finding(
                 code="ABLATION_NO_DESTINATION_SCAN",
@@ -118,7 +124,9 @@ def decide(
         )
     else:
         floor = destination_floor(tokens, vendor)
+        alternate = alternate_routing_floor(tokens, nt.text, vendor)
     findings.extend(floor)
+    findings.extend(alternate)
 
     # I4 - the destination is not in this message at all.
     out_of_band = out_of_band_destination(nt.text)
@@ -212,9 +220,12 @@ def decide(
         decision = "HOLD"
         if out_of_band:
             reasons.append("destination_out_of_band")
-    elif low:
+    elif low or alternate:
         decision = "REVIEW"
-        reasons.append("verified_low_risk_change:" + ",".join(sorted({d.field for d in low})))
+        if low:
+            reasons.append("verified_low_risk_change:" + ",".join(sorted({d.field for d in low})))
+        if alternate:
+            reasons.append("pre_registered_alternate_routing")
     else:
         decision = "CLEAR"
         reasons.append("no_change_evidenced" if no_change_accepted else "nothing_to_gate")

@@ -85,6 +85,25 @@ class PipelineResult:
             return None
         return self.expected != "HOLD" and self.decision.decision == "HOLD"
 
+    @property
+    def non_clear_release(self) -> bool | None:
+        """Expected REVIEW or HOLD, but the gate said CLEAR.
+
+        `unsafe` only catches the case where a HOLD was released. A case
+        expected to be REVIEW that comes back CLEAR is the same class of
+        failure - the gate waved something through that the policy says a human
+        must look at - and it is invisible to `unsafe` because REVIEW was never
+        a hold to begin with. The pre-registered-alternate bypass was exactly
+        this: expected REVIEW, actual CLEAR, counted as a *success* by every
+        metric the harness had.
+
+        Any non-CLEAR expectation that lands on CLEAR is a release, whatever
+        the expected level was.
+        """
+        if self.expected is None:
+            return None
+        return self.expected in ("REVIEW", "HOLD") and self.decision.decision == "CLEAR"
+
 
 def _trust_everything(ex: Extraction, nt: NormalizedText) -> ValidationResult:
     """Ablation F. Accept the model's output without the closed-world check.

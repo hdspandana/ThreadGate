@@ -17,6 +17,13 @@ I3 - Change act with nothing verifiable. If the email asserts a change in
      payment language but the validator admitted no values, hold it. This is the
      token-less request: "new details are in the attached PDF".
 
+I5 - Pre-registered alternate in a routing instruction. I1 holds on
+     destinations we do not recognise and is silent on ones we do, which is
+     right for that question but leaves the decision to the model whenever the
+     account named is a real alternate the vendor already registered. I5 gives
+     that case an AI-independent floor of REVIEW: known, not currently active,
+     and named in a sentence that tells the reader to route money to it.
+
 What these three do NOT cover is stated plainly in the README: a token-less
 request whose change language the model also fails to report has no
 AI-independent evidence at all, and only the human attestation step closes it.
@@ -26,7 +33,7 @@ from __future__ import annotations
 
 import re
 
-from .records import Vendor
+from .records import Vendor, normalize_code
 from .schema import Finding
 from .tokens import Token, unique_accounts
 
@@ -111,6 +118,188 @@ def destination_code_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]
 def destination_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
     """The whole AI-independent floor: every visible destination token."""
     return account_floor(tokens, vendor) + destination_code_floor(tokens, vendor)
+
+
+# ---------------------------------------------------------------------------
+# I5 - a pre-registered alternate being routed to is at least a REVIEW
+# ---------------------------------------------------------------------------
+# I1 asks "is this destination one we know at all?" and holds when it is not.
+# It is silent when the destination IS known, which is the correct answer to
+# that question - but it leaves a hole. An attacker who learns a pre-registered
+# alternate account, or a genuine vendor quietly moving money to one, produces
+# an email naming a destination that passes I1 and whose only remaining
+# obstacle is the model's opinion of the prose. That is exactly the failure the
+# architecture says must not be possible: a decision resting on AI judgement
+# alone.
+#
+# So a destination that is known, is NOT the currently active one, and is named
+# in an actionable payment-routing context gets an AI-independent floor of
+# REVIEW. It is deliberately weaker than I1's HOLD - the account is a real one
+# the vendor registered, so this is a change to be attested, not an unknown
+# destination - and it is a floor, so nothing here can lower a decision.
+
+ROUTING_ACTION = re.compile(
+    r"""
+    (?:
+        # "use this account", "use our alternate collections account"
+        \buse\s+(?:this|the|our|these|those|an|a|the\s+alternate|the\s+new|the\s+following)\b
+        (?:\s+[\w'\u2019./-]+){0,3}?\s*
+        \b(?:account|a\s*/\s*c|acct|ifsc|iban|swift|beneficiary|details?|one|number)\b
+      |
+        # "route payments to", "remit to", "send future payments to",
+        # "transfer to", "pay to", "switch to", "direct payments to"
+        \b(?:route|routing|remit|remitting|send|sending|transfer|transferring|
+           pay|paying|switch|switching|direct|directing|move|moving|
+           credit|deposit)\b
+        (?:\s+[\w'\u2019.,/-]+){0,4}?\s*
+        \b(?:to|into|towards?)\b
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+# A routing instruction the email explicitly walks back is not a routing
+# instruction. "do not use the alternate account" names every element of the
+# pattern above and asks for the opposite of what it describes.
+NEGATION_CUE = re.compile(
+    r"\b(?:not|n't|never|no\s+longer|instead\s+of|rather\s+than|avoid|"
+    r"disregard|ignore|cancel|withdraw|revert|stop|superseded)\b",
+    re.IGNORECASE,
+)
+
+# How far back to look for a negation before losing track of what it negates.
+NEGATION_WINDOW = 40
+
+# How far after a routing instruction a destination may be named and still be
+# the thing that instruction points at. "Route payments to X" names X
+# immediately; a sentence that mentions an incidentally-named account long after
+# (or long before) the instruction is not routing to it. Without this bound a
+# single sentence like "do not use the alternate account ..., continue to remit
+# to our current account ..." reads as an instruction to pay the alternate.
+ROUTING_DISTANCE = 120
+
+
+def _sentences_with_offsets(text: str) -> list[tuple[str, int, int]]:
+    """Sentences with their offsets, so a token can be placed in one."""
+    out: list[tuple[str, int, int]] = []
+    if not text:
+        return out
+    pos = 0
+    for part in SENTENCE_SPLIT.split(text):
+        idx = text.find(part, pos)
+        if idx < 0:
+            idx = pos
+        out.append((part, idx, idx + len(part)))
+        pos = idx + len(part)
+    return out
+
+
+def _routing_matches(sentence: str):
+    """Routing instructions in this sentence that the email does not walk back."""
+    for m in ROUTING_ACTION.finditer(sentence or ""):
+        window = sentence[max(0, m.start() - NEGATION_WINDOW) : m.start()]
+        if NEGATION_CUE.search(window):
+            continue
+        yield m
+
+
+def actionable_routing(sentence: str) -> bool:
+    """Does this sentence tell the reader to route money somewhere?
+
+    True only for an instruction. A sentence that merely mentions an account,
+    or that names one in order to say not to use it, is not an instruction.
+    """
+    return any(True for _ in _routing_matches(sentence))
+
+
+def routing_instruction_ends(sentence: str) -> list[int]:
+    """Offsets just past each actionable routing instruction in the sentence.
+
+    The floor needs positions, not a yes/no, because knowing that a sentence
+    contains an instruction is not the same as knowing which token the
+    instruction points at. A sentence can hold both a refused instruction and a
+    live one - "do not use the alternate account, continue to remit to our
+    current account" - and only the token that follows the live instruction is
+    the destination being routed to.
+    """
+    return [m.end() for m in _routing_matches(sentence)]
+
+
+def _alternate_destination_status(tok: Token, vendor: Vendor) -> str | None:
+    """Is this token a known destination that is not the active one?
+
+    Returns None for the current destination and for anything unknown. Unknown
+    destinations are I1's job and already hold; this guard must not fire on
+    them, or a REVIEW finding would sit alongside the stronger HOLD.
+    """
+    if tok.kind == "account":
+        status = vendor.account_status(tok.normalized)
+        if status is None or status == "current":
+            return None
+        return status
+    if tok.kind in ("ifsc", "iban", "swift"):
+        if not vendor.is_known_destination_code(tok.kind, tok.raw):
+            return None
+        current = vendor.current(tok.kind)
+        if current and normalize_code(current) == normalize_code(tok.raw):
+            return None
+        return "allowlisted"
+    return None
+
+
+def alternate_routing_floor(
+    tokens: list[Token], norm_text: str, vendor: Vendor
+) -> list[Finding]:
+    """I5. A pre-registered alternate named in a routing instruction.
+
+    Lives beside the destination floor and is gated by the same ablation, so
+    `hybrid_no_scan` removes it too: it is part of what the closed-world scan
+    buys, not a property of the model.
+    """
+    findings: list[Finding] = []
+    sentences = _sentences_with_offsets(norm_text)
+    seen: set[tuple[str, str]] = set()
+
+    for tok in tokens:
+        status = _alternate_destination_status(tok, vendor)
+        if status is None:
+            continue
+        placed = next(
+            ((s, s0) for s, s0, s1 in sentences if s0 <= tok.start < s1), None
+        )
+        if placed is None:
+            continue
+        sentence, s0 = placed
+        # The account has to be the one the instruction points at: named after
+        # it, and soon enough after it to be the object rather than a
+        # neighbouring detail.
+        ends = [s0 + e for e in routing_instruction_ends(sentence)]
+        if not any(0 <= tok.start - e <= ROUTING_DISTANCE for e in ends):
+            continue
+        key = (tok.kind, tok.normalized)
+        if key in seen:
+            continue
+        seen.add(key)
+        findings.append(
+            Finding(
+                code="I5_ALTERNATE_DESTINATION_ROUTING",
+                # Advisory, like the reference-state finding: this says the
+                # floor is engaged, and `policy.decide` decides the consequence.
+                severity="info",
+                message=(
+                    f"{tok.kind.upper()} {tok.masked} is a pre-registered "
+                    f"{'alternate' if status == 'allowlisted' else status} for "
+                    f"{vendor.display_name}, but it is not the currently active "
+                    "destination, and this email asks for payments to be routed "
+                    "to it. A request to move money to a different destination "
+                    "is at least a REVIEW no matter how the message reads."
+                ),
+                snippet=sentence.strip()[:200],
+                span_norm=(tok.start, tok.end),
+                independent_of_model=True,
+            )
+        )
+    return findings
 
 
 # Words that mean "the destination is somewhere other than this message body".

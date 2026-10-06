@@ -133,7 +133,14 @@ def test_no_unsafe_outcomes_anywhere(vendors):
             for case in cases:
                 r: PipelineResult = run_case(case, vendors, extractor_fn=attack)
                 assert not r.unsafe, f"{name} {case['id']} released a hold under {attack.__name__}"
-                assert r.decision.decision != "REVIEW"
+                # Not `decision != "REVIEW"`. That passed only while the two
+                # pre-registered-alternate cases were silently CLEAR; asserting
+                # it would lock the bypass in as the specification. The gate may
+                # be stricter than the label under attack, never looser.
+                assert not r.non_clear_release, (
+                    f"{name} {case['id']} expected {case['expected_decision']} "
+                    f"but reached CLEAR under {attack.__name__}"
+                )
 
 
 def test_both_ablation_switches_reach_the_pipeline(case_by_id_all, vendors):
