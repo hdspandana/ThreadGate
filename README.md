@@ -144,7 +144,13 @@ input to the decision, not a given.
   request id, a digest of the destination, and the reference version it was made
   against. It is refused if presented a second time, or against any other
   request, destination, record version or vendor. A failed presentation burns
-  the event, so it cannot be retried with a better guess.
+  the event, so it cannot be retried with a better guess — see the trade-off
+  below.
+
+  **Verification events are single-use within the prototype's active verification store; durable distributed replay protection is outside this prototype.**
+  The guarantee is a single-process one: it is neither a replicated
+  guarantee nor a durable one, and it is not described as either anywhere
+  in these documents.
 
 **All fourteen invariants, and the tests that hold them**
 
@@ -161,12 +167,38 @@ fourteen" is exactly the sort of thing that quietly goes stale.
 | 6 | A forged verbatim quote cannot justify a no-change verdict | `test_a_forged_verbatim_quote_cannot_justify_no_change` |
 | 7 | A HOLD trigger can never produce CLEAR in the same run | `test_a_hold_trigger_can_never_produce_a_clear` |
 | 8 | An old reference version cannot satisfy a newer reference | `test_a_v1_attestation_is_refused_against_a_v2_record`, `test_the_same_event_cannot_be_used_against_another_destination` |
-| 9 | A verification event cannot be presented twice | `test_the_same_event_cannot_be_used_twice`, `test_a_replayed_attestation_is_rejected_end_to_end_without_moving_the_decision` |
+| 9 | A verification event cannot be presented twice, within the active store | `test_the_same_event_cannot_be_used_twice`, `test_a_replayed_attestation_is_rejected_end_to_end_without_moving_the_decision` |
 | 10 | A masked or partial destination never matches | `test_a_masked_destination_never_matches_the_reference` |
 | 11 | A missing reference escalates instead of being guessed | `test_a_missing_reference_escalates_instead_of_crashing`, `test_a_missing_reference_holds_a_payment_destination_change` |
 | 12 | A degraded record never results in CLEAR | `test_a_stale_reference_never_clears`, `test_no_case_ever_clears_on_a_degraded_reference` |
 | 13 | An unreadable attachment cannot silently create a CLEAR | `test_a_destination_we_cannot_read_is_never_cleared` |
 | 14 | Model failure cannot produce CLEAR | `test_a_failing_model_never_clears`, `test_no_key_means_the_pipeline_holds_and_never_clears` |
+
+### The burn-on-reject trade-off
+
+A rejected presentation **consumes** the single-use verification event by
+design. Once an event id has been presented it is burned, whether the outcome
+was accept or reject, and no later presentation of that id can ever succeed.
+
+The reason is that a failed attempt is itself information. Whoever presented it
+against the wrong request, destination or record version has demonstrated that
+they do not hold a valid event for this context. Letting them keep it for a
+second, better-targeted guess would turn the store into an oracle: each
+rejection would narrow down which binding was wrong, and the event would stay
+usable in the meantime.
+
+The cost is deliberate, and it is worth stating plainly rather than burying:
+
+- a genuine presentation that fails for a benign reason — a mistyped request id,
+  an attestation minted moments before the record moved to a new version —
+  **cannot simply be retried with the same event**;
+- the operator must mint a new verification event and perform the check again.
+
+That is a real usability cost, and it is accepted in exchange for removing the
+probing channel. For a control whose only job is to be hard to reuse, an
+operator inconvenience is the right side of the trade.
+
+---
 
 Invariants 8, 9 and 12 are the three that were, until this change, listed as
 not built. They are implemented now; `tests/test_verification_and_lineage.py`
@@ -222,6 +254,15 @@ Two error types are counted separately, because they cost different things:
 | ThreadGate, offline test double | 100.0% | 0 | 0 |
 | ThreadGate, model steered to say "no change" | 65.0% | **0** | 6 |
 | ThreadGate, steered model forging a verbatim quote | 65.0% | **0** | 6 |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | |
+| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | |
+
+Every row marked *pending — not yet run* needs a `GEMINI_API_KEY`. None has
+been run, so none is filled in: the three ablations and the model-alone
+baseline are all model-backed, and there is no offline substitute for them. Do
+not fill them from the offline test double — that row is a regression guard, not
+a model result.
 
 ### Set 2 — stress additions, written after the first run (20 cases)
 
@@ -233,6 +274,9 @@ Two error types are counted separately, because they cost different things:
 | ThreadGate, offline test double | 100.0% | 0 | 0 |
 | ThreadGate, model steered to say "no change" | 75.0% | **0** | 4 |
 | ThreadGate, steered model forging a verbatim quote | 75.0% | **0** | 4 |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | |
+| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | |
 
 ### Set 3 — combined, stress evaluation only (40 cases)
 
@@ -246,6 +290,9 @@ Not an unbiased benchmark. Shown for completeness and for the category view.
 | ThreadGate, offline test double | 100.0% | 0 | 0 |
 | ThreadGate, model steered to say "no change" | 70.0% | **0** | 10 |
 | ThreadGate, steered model forging a verbatim quote | 70.0% | **0** | 10 |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | |
+| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | |
 
 ### Where the reading is actually needed
 
@@ -363,10 +410,13 @@ prototype guarantees:
   after the callback; the gate reads the version and refuses to carry a
   verification across it. A prototype that could rewrite its own reference
   would not be a reference.
-- **The attestation store is per-process.** Consumed event ids live in memory
-  and are not written to disk by the product path, so a restart begins with an
-  empty store. `AttestationStore.dump()` and `.restore()` exist so a deployment
-  that needs durability can persist it; the demo does not.
+- **The verification store is neither durable nor distributed.** Consumed
+  event ids live in memory and are not written to disk by the product path, so
+  a restart begins with an empty store. This is a single-process prototype, not
+  a replicated service, and the single-use guarantee is scoped to the store that
+  is currently live: it holds for as long as that process does, and no longer.
+  `AttestationStore.dump()` and `.restore()` exist so a deployment that needs
+  durability can persist it; the demo does not. Stated precisely in **R3** above.
 
 `tests/test_reference_and_attestation.py` fails if this list stops saying
 something that is still true, and it also fails if it keeps disclaiming
@@ -379,7 +429,7 @@ directions, which is the only way a "not built" list stays honest.
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
-python -m pytest            # 129 tests, no network needed
+python -m pytest            # 156 tests, no network needed
 python scripts/secret_scan.py   # nothing credential-like in the tree or history
 python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
 python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped

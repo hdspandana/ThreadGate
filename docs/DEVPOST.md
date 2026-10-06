@@ -80,7 +80,7 @@ on file, and if not, does a human have to look at it?**
 ### 2. Technical approach and components
 
 **Stack:** Python, Google Gemini (`gemini-2.5-flash`) for interpretation only,
-Pydantic for output contracts, Streamlit for the demo, pytest for the 129-test
+Pydantic for output contracts, Streamlit for the demo, pytest for the 156-test
 suite. No embeddings, no vector store, no OCR, no URL scanning, no threat feed.
 
 The pipeline is deliberately asymmetric. The model sits in exactly one box, and
@@ -141,6 +141,20 @@ record it compares against, so three more invariants apply to that record:
   destination, record version or vendor. A failed presentation burns the event,
   so it cannot be retried with a better guess.
 
+  **Verification events are single-use within the prototype's active verification store; durable distributed replay protection is outside this prototype.** This is a single-process
+  prototype, not a replicated service, and the guarantee is scoped
+  accordingly.
+
+**The burn-on-reject trade-off.** A rejected presentation consumes the
+single-use verification event by design: once an event id has been presented it
+is burned, whether the outcome was accept or reject. A failed attempt is itself
+information — whoever presented it against the wrong request, destination or
+record version has shown they do not hold a valid event — and letting them keep
+it for a second, better-targeted guess would turn the store into an oracle.
+The cost is that a presentation which failed for a benign reason cannot simply
+be retried with the same event; a new one must be minted. That is a usability
+cost accepted in exchange for removing the probing channel.
+
 All fourteen invariants are enumerated, each with the test that holds it, in
 the README's security-model section. Nothing is claimed that is not tested.
 
@@ -168,18 +182,22 @@ Measured, and reproducible with `python eval/run_eval.py`:
 | --- | --- | --- | --- | --- |
 | Rules-only baseline (raw) | 50.0% | 2 | 60.0% | 2 |
 | Rules-only baseline + normalisation | 60.0% | 0 | 70.0% | 0 |
-| ThreadGate (Gemini) | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` |
+| ThreadGate (Gemini) | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` |
 | ThreadGate, model steered to say "no change" | 65.0% | **0** | 75.0% | **0** |
 | ThreadGate, steered model forging a verbatim quote | 65.0% | **0** | 75.0% | **0** |
-| The model alone, deciding the verdict | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` |
-| ThreadGate, ablation: independent scan removed | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` |
-| ThreadGate, ablation: evidence validation removed | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` | `[[FILL]]` |
+| The model alone, deciding the verdict | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` |
+| ThreadGate, ablation: independent scan removed | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` |
+| ThreadGate, ablation: evidence validation removed | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` | `[[FILL: NOT RUN]]` |
 
 The last three rows are the argument that this is not a wrapper. `ai_only` is
 the same model with no gate — it exists only to be compared against, and it is
 not reachable from the product. The two ablations remove one safeguard each;
-whatever accuracy they lose is what that safeguard was worth. Do not submit
-until all four rows are filled from a real run.
+whatever accuracy they lose is what that safeguard was worth. **These four rows have not been run.** Every one of them is
+model-backed, and no `GEMINI_API_KEY` has been used at any point in building
+this. They are marked `NOT RUN` rather than left blank so that a blank cell can
+never be mistaken for a zero or an omission. Do not submit until all four are
+filled from a real `--require-gemini` run, and do not fill them from the
+offline test double.
 
 **`unsafe` is the only error that can lose money** — a case that should be held
 that was not. `false hold` costs a phone call.
@@ -248,10 +266,13 @@ are the questions a payments person will ask first:
   record. Updating a record is a human operation performed out of band after the
   callback; the gate reads the version and refuses to carry a verification
   across it.
-- **The attestation store is per-process.** Consumed event ids live in memory
-  and are not written to disk by the product path, so a restart begins with an
-  empty store. `dump()` and `restore()` exist for a deployment that needs
-  durability; the demo does not.
+- **Replay protection is neither durable nor distributed.** Verification events
+  are single-use within the prototype's active verification store; durable
+  distributed replay protection is outside this prototype. Consumed event ids
+  live in memory and are not written to disk by the product path, so a restart
+  begins with an empty store. `dump()` and `restore()` exist for a deployment
+  that needs durability; the demo does not. No claim is made here about
+  guaranteeing single-use across processes, restarts or replicas.
 
 `tests/test_reference_and_attestation.py` fails if this list stops saying
 something that is still true, *or* keeps disclaiming something that has since
@@ -282,11 +303,11 @@ of model behaviour, and must not be captioned as Gemini output. Re-running
 ## Before submitting
 
 1. Run `python eval/run_eval.py --require-gemini` with the key set, and replace
-   every `[[FILL]]` in the tables above with the measured row. The command exits
+   every `[[FILL: NOT RUN]]` in the tables above with the measured row. The command exits
    **2** if any model system was skipped, so a silently absent key cannot look
    like a completed run. Output lands in `results/`.
 2. Re-run `python scripts/kill_gate.py` and `python -m pytest`; both must be
-   green on the final commit (129 tests, 17 kill-gate checks).
+   green on the final commit (156 tests, 17 kill-gate checks).
 3. `git log --reverse` — the first commit must be dated after 2026-10-03 12:00
    EDT / 21:30 IST.
 4. Confirm no key is committed: `python scripts/secret_scan.py` must print
