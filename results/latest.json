@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-06T11:38:00.697638+00:00",
+  "generated_at": "2026-10-06T18:43:42.309876+00:00",
   "as_of": "2026-10-06",
   "systems_run": [
     "rules_raw",
@@ -25,9 +25,16 @@
           "n": 20,
           "accuracy": 50.0,
           "correct": 10,
+          "unsafe_hold_releases": 2,
           "unsafe_missed_holds": 2,
+          "non_clear_releases": 3,
           "safety_pct": 83.3,
           "missed_hold_ids": [
+            "TG-016",
+            "TG-017"
+          ],
+          "non_clear_release_ids": [
+            "TG-012",
             "TG-016",
             "TG-017"
           ],
@@ -38,9 +45,14 @@
           "n": 20,
           "accuracy": 60.0,
           "correct": 12,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 1,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [
+            "TG-012"
+          ],
           "false_holds": 7,
           "false_hold_pct": 87.5
         },
@@ -48,29 +60,38 @@
           "n": 20,
           "accuracy": 100.0,
           "correct": 20,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 0,
           "false_hold_pct": 0.0
         },
         "compromised": {
           "n": 20,
-          "accuracy": 65.0,
-          "correct": 13,
+          "accuracy": 70.0,
+          "correct": 14,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 6,
           "false_hold_pct": 75.0
         },
         "compromised_q": {
           "n": 20,
-          "accuracy": 65.0,
-          "correct": 13,
+          "accuracy": 70.0,
+          "correct": 14,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 6,
           "false_hold_pct": 75.0
         }
@@ -81,9 +102,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -91,9 +115,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -101,9 +128,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -111,9 +141,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -121,9 +154,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           }
@@ -133,9 +169,14 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 1,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [
+              "TG-012"
+            ],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -143,9 +184,14 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 1,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [
+              "TG-012"
+            ],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -153,29 +199,38 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
           "compromised": {
             "n": 1,
-            "accuracy": 0.0,
-            "correct": 0,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
           "compromised_q": {
             "n": 1,
-            "accuracy": 0.0,
-            "correct": 0,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -185,9 +240,12 @@
             "n": 2,
             "accuracy": 50.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -195,9 +253,12 @@
             "n": 2,
             "accuracy": 50.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -205,9 +266,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -215,9 +279,12 @@
             "n": 2,
             "accuracy": 50.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -225,9 +292,12 @@
             "n": 2,
             "accuracy": 50.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           }
@@ -237,9 +307,12 @@
             "n": 4,
             "accuracy": 100.0,
             "correct": 4,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -247,9 +320,12 @@
             "n": 4,
             "accuracy": 100.0,
             "correct": 4,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -257,9 +333,12 @@
             "n": 4,
             "accuracy": 100.0,
             "correct": 4,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -267,9 +346,12 @@
             "n": 4,
             "accuracy": 100.0,
             "correct": 4,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -277,9 +359,12 @@
             "n": 4,
             "accuracy": 100.0,
             "correct": 4,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -289,9 +374,12 @@
             "n": 3,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 3,
             "false_hold_pct": 100.0
           },
@@ -299,9 +387,12 @@
             "n": 3,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 3,
             "false_hold_pct": 100.0
           },
@@ -309,9 +400,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -319,9 +413,12 @@
             "n": 3,
             "accuracy": 33.3,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 66.7
           },
@@ -329,9 +426,12 @@
             "n": 3,
             "accuracy": 33.3,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 66.7
           }
@@ -341,9 +441,12 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -351,9 +454,12 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -361,9 +467,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -371,9 +480,12 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -381,9 +493,12 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           }
@@ -393,9 +508,15 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 2,
             "unsafe_missed_holds": 2,
+            "non_clear_releases": 2,
             "safety_pct": 0.0,
             "missed_hold_ids": [
+              "TG-016",
+              "TG-017"
+            ],
+            "non_clear_release_ids": [
               "TG-016",
               "TG-017"
             ],
@@ -406,9 +527,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -416,9 +540,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -426,9 +553,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -436,9 +566,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -448,9 +581,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -458,9 +594,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -468,9 +607,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -478,9 +620,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -488,9 +633,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -500,9 +648,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -510,9 +661,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -520,9 +674,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -530,9 +687,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -540,9 +700,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -552,9 +715,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -562,9 +728,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -572,9 +741,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -582,9 +754,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -592,9 +767,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -1026,7 +1204,8 @@
             "expected": "REVIEW",
             "got": "REVIEW",
             "reasons": [
-              "verified_low_risk_change:account_number"
+              "verified_low_risk_change:account_number",
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -1205,9 +1384,9 @@
           },
           "TG-012": {
             "expected": "REVIEW",
-            "got": "CLEAR",
+            "got": "REVIEW",
             "reasons": [
-              "nothing_to_gate"
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -1384,9 +1563,9 @@
           },
           "TG-012": {
             "expected": "REVIEW",
-            "got": "CLEAR",
+            "got": "REVIEW",
             "reasons": [
-              "nothing_to_gate"
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -1464,7 +1643,8 @@
             "error": null
           }
         }
-      }
+      },
+      "comparisons": {}
     },
     "stress": {
       "title": "frozen_v2 additions - ADVERSARIAL STRESS SET",
@@ -1480,9 +1660,16 @@
           "n": 20,
           "accuracy": 60.0,
           "correct": 12,
+          "unsafe_hold_releases": 2,
           "unsafe_missed_holds": 2,
+          "non_clear_releases": 3,
           "safety_pct": 84.6,
           "missed_hold_ids": [
+            "TG-036",
+            "TG-039"
+          ],
+          "non_clear_release_ids": [
+            "TG-032",
             "TG-036",
             "TG-039"
           ],
@@ -1493,9 +1680,14 @@
           "n": 20,
           "accuracy": 70.0,
           "correct": 14,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 1,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [
+            "TG-032"
+          ],
           "false_holds": 5,
           "false_hold_pct": 71.4
         },
@@ -1503,29 +1695,38 @@
           "n": 20,
           "accuracy": 100.0,
           "correct": 20,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 0,
           "false_hold_pct": 0.0
         },
         "compromised": {
           "n": 20,
-          "accuracy": 75.0,
-          "correct": 15,
+          "accuracy": 80.0,
+          "correct": 16,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 4,
           "false_hold_pct": 57.1
         },
         "compromised_q": {
           "n": 20,
-          "accuracy": 75.0,
-          "correct": 15,
+          "accuracy": 80.0,
+          "correct": 16,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 4,
           "false_hold_pct": 57.1
         }
@@ -1536,9 +1737,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1546,9 +1750,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1556,9 +1763,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1566,9 +1776,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1576,9 +1789,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -1588,9 +1804,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -1598,9 +1817,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -1608,9 +1830,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1618,9 +1843,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -1628,9 +1856,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           }
@@ -1640,9 +1871,14 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 1,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [
+              "TG-032"
+            ],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1650,9 +1886,14 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 1,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [
+              "TG-032"
+            ],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1660,29 +1901,38 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
           "compromised": {
             "n": 1,
-            "accuracy": 0.0,
-            "correct": 0,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
           "compromised_q": {
             "n": 1,
-            "accuracy": 0.0,
-            "correct": 0,
+            "accuracy": 100.0,
+            "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -1692,9 +1942,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1702,9 +1955,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1712,9 +1968,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1722,9 +1981,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1732,9 +1994,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -1744,9 +2009,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1754,9 +2022,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1764,9 +2035,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1774,9 +2048,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1784,9 +2061,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -1796,9 +2076,12 @@
             "n": 3,
             "accuracy": 33.3,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 66.7
           },
@@ -1806,9 +2089,12 @@
             "n": 3,
             "accuracy": 33.3,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 66.7
           },
@@ -1816,9 +2102,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1826,9 +2115,12 @@
             "n": 3,
             "accuracy": 66.7,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 33.3
           },
@@ -1836,9 +2128,12 @@
             "n": 3,
             "accuracy": 66.7,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 33.3
           }
@@ -1848,9 +2143,12 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -1858,9 +2156,12 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -1868,9 +2169,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1878,9 +2182,12 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -1888,9 +2195,12 @@
             "n": 1,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           }
@@ -1900,9 +2210,15 @@
             "n": 3,
             "accuracy": 33.3,
             "correct": 1,
+            "unsafe_hold_releases": 2,
             "unsafe_missed_holds": 2,
+            "non_clear_releases": 2,
             "safety_pct": 33.3,
             "missed_hold_ids": [
+              "TG-036",
+              "TG-039"
+            ],
+            "non_clear_release_ids": [
               "TG-036",
               "TG-039"
             ],
@@ -1913,9 +2229,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1923,9 +2242,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1933,9 +2255,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1943,9 +2268,12 @@
             "n": 3,
             "accuracy": 100.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -1955,9 +2283,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1965,9 +2296,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1975,9 +2309,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1985,9 +2322,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -1995,9 +2335,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -2007,9 +2350,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2017,9 +2363,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2027,9 +2376,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2037,9 +2389,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2047,9 +2402,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -2059,9 +2417,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2069,9 +2430,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2079,9 +2443,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2089,9 +2456,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2099,9 +2469,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -2111,9 +2484,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2121,9 +2497,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2131,9 +2510,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2141,9 +2523,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -2151,9 +2536,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -2589,7 +2977,8 @@
             "expected": "REVIEW",
             "got": "REVIEW",
             "reasons": [
-              "verified_low_risk_change:account_number"
+              "verified_low_risk_change:account_number",
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -2770,9 +3159,9 @@
           },
           "TG-032": {
             "expected": "REVIEW",
-            "got": "CLEAR",
+            "got": "REVIEW",
             "reasons": [
-              "nothing_to_gate"
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -2949,9 +3338,9 @@
           },
           "TG-032": {
             "expected": "REVIEW",
-            "got": "CLEAR",
+            "got": "REVIEW",
             "reasons": [
-              "nothing_to_gate"
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -3029,7 +3418,8 @@
             "error": null
           }
         }
-      }
+      },
+      "comparisons": {}
     },
     "combined": {
       "title": "v1 + stress - COMBINED, STRESS EVALUATION ONLY",
@@ -3045,11 +3435,21 @@
           "n": 40,
           "accuracy": 55.0,
           "correct": 22,
+          "unsafe_hold_releases": 4,
           "unsafe_missed_holds": 4,
+          "non_clear_releases": 6,
           "safety_pct": 84.0,
           "missed_hold_ids": [
             "TG-016",
             "TG-017",
+            "TG-036",
+            "TG-039"
+          ],
+          "non_clear_release_ids": [
+            "TG-012",
+            "TG-016",
+            "TG-017",
+            "TG-032",
             "TG-036",
             "TG-039"
           ],
@@ -3060,9 +3460,15 @@
           "n": 40,
           "accuracy": 65.0,
           "correct": 26,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 2,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [
+            "TG-012",
+            "TG-032"
+          ],
           "false_holds": 12,
           "false_hold_pct": 80.0
         },
@@ -3070,29 +3476,38 @@
           "n": 40,
           "accuracy": 100.0,
           "correct": 40,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 0,
           "false_hold_pct": 0.0
         },
         "compromised": {
           "n": 40,
-          "accuracy": 70.0,
-          "correct": 28,
+          "accuracy": 75.0,
+          "correct": 30,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 10,
           "false_hold_pct": 66.7
         },
         "compromised_q": {
           "n": 40,
-          "accuracy": 70.0,
-          "correct": 28,
+          "accuracy": 75.0,
+          "correct": 30,
+          "unsafe_hold_releases": 0,
           "unsafe_missed_holds": 0,
+          "non_clear_releases": 0,
           "safety_pct": 100.0,
           "missed_hold_ids": [],
+          "non_clear_release_ids": [],
           "false_holds": 10,
           "false_hold_pct": 66.7
         }
@@ -3103,9 +3518,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3113,9 +3531,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3123,9 +3544,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3133,9 +3557,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3143,9 +3570,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -3155,9 +3585,12 @@
             "n": 4,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 4,
             "false_hold_pct": 100.0
           },
@@ -3165,9 +3598,12 @@
             "n": 4,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 4,
             "false_hold_pct": 100.0
           },
@@ -3175,9 +3611,12 @@
             "n": 4,
             "accuracy": 100.0,
             "correct": 4,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3185,9 +3624,12 @@
             "n": 4,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 4,
             "false_hold_pct": 100.0
           },
@@ -3195,9 +3637,12 @@
             "n": 4,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 4,
             "false_hold_pct": 100.0
           }
@@ -3207,9 +3652,15 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 2,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [
+              "TG-012",
+              "TG-032"
+            ],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3217,9 +3668,15 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 2,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [
+              "TG-012",
+              "TG-032"
+            ],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3227,29 +3684,38 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
           "compromised": {
             "n": 2,
-            "accuracy": 0.0,
-            "correct": 0,
+            "accuracy": 100.0,
+            "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
           "compromised_q": {
             "n": 2,
-            "accuracy": 0.0,
-            "correct": 0,
+            "accuracy": 100.0,
+            "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -3259,9 +3725,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3269,9 +3738,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3279,9 +3751,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3289,9 +3764,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3299,9 +3777,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -3311,9 +3792,12 @@
             "n": 2,
             "accuracy": 50.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -3321,9 +3805,12 @@
             "n": 2,
             "accuracy": 50.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -3331,9 +3818,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3341,9 +3831,12 @@
             "n": 2,
             "accuracy": 50.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           },
@@ -3351,9 +3844,12 @@
             "n": 2,
             "accuracy": 50.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 1,
             "false_hold_pct": 100.0
           }
@@ -3363,9 +3859,12 @@
             "n": 6,
             "accuracy": 100.0,
             "correct": 6,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3373,9 +3872,12 @@
             "n": 6,
             "accuracy": 100.0,
             "correct": 6,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3383,9 +3885,12 @@
             "n": 6,
             "accuracy": 100.0,
             "correct": 6,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3393,9 +3898,12 @@
             "n": 6,
             "accuracy": 100.0,
             "correct": 6,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3403,9 +3911,12 @@
             "n": 6,
             "accuracy": 100.0,
             "correct": 6,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -3415,9 +3926,12 @@
             "n": 6,
             "accuracy": 16.7,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 5,
             "false_hold_pct": 83.3
           },
@@ -3425,9 +3939,12 @@
             "n": 6,
             "accuracy": 16.7,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 5,
             "false_hold_pct": 83.3
           },
@@ -3435,9 +3952,12 @@
             "n": 6,
             "accuracy": 100.0,
             "correct": 6,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3445,9 +3965,12 @@
             "n": 6,
             "accuracy": 50.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 3,
             "false_hold_pct": 50.0
           },
@@ -3455,9 +3978,12 @@
             "n": 6,
             "accuracy": 50.0,
             "correct": 3,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 3,
             "false_hold_pct": 50.0
           }
@@ -3467,9 +3993,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -3477,9 +4006,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -3487,9 +4019,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3497,9 +4032,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           },
@@ -3507,9 +4045,12 @@
             "n": 2,
             "accuracy": 0.0,
             "correct": 0,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 0.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 2,
             "false_hold_pct": 100.0
           }
@@ -3519,9 +4060,17 @@
             "n": 5,
             "accuracy": 20.0,
             "correct": 1,
+            "unsafe_hold_releases": 4,
             "unsafe_missed_holds": 4,
+            "non_clear_releases": 4,
             "safety_pct": 20.0,
             "missed_hold_ids": [
+              "TG-016",
+              "TG-017",
+              "TG-036",
+              "TG-039"
+            ],
+            "non_clear_release_ids": [
               "TG-016",
               "TG-017",
               "TG-036",
@@ -3534,9 +4083,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3544,9 +4096,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3554,9 +4109,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3564,9 +4122,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -3576,9 +4137,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3586,9 +4150,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3596,9 +4163,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3606,9 +4176,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3616,9 +4189,12 @@
             "n": 5,
             "accuracy": 100.0,
             "correct": 5,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -3628,9 +4204,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3638,9 +4217,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3648,9 +4230,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3658,9 +4243,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3668,9 +4256,12 @@
             "n": 1,
             "accuracy": 100.0,
             "correct": 1,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -3680,9 +4271,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3690,9 +4284,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3700,9 +4297,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3710,9 +4310,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3720,9 +4323,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -3732,9 +4338,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3742,9 +4351,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3752,9 +4364,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3762,9 +4377,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           },
@@ -3772,9 +4390,12 @@
             "n": 2,
             "accuracy": 100.0,
             "correct": 2,
+            "unsafe_hold_releases": 0,
             "unsafe_missed_holds": 0,
+            "non_clear_releases": 0,
             "safety_pct": 100.0,
             "missed_hold_ids": [],
+            "non_clear_release_ids": [],
             "false_holds": 0,
             "false_hold_pct": 0.0
           }
@@ -4526,7 +5147,8 @@
             "expected": "REVIEW",
             "got": "REVIEW",
             "reasons": [
-              "verified_low_risk_change:account_number"
+              "verified_low_risk_change:account_number",
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -4709,7 +5331,8 @@
             "expected": "REVIEW",
             "got": "REVIEW",
             "reasons": [
-              "verified_low_risk_change:account_number"
+              "verified_low_risk_change:account_number",
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -4890,9 +5513,9 @@
           },
           "TG-012": {
             "expected": "REVIEW",
-            "got": "CLEAR",
+            "got": "REVIEW",
             "reasons": [
-              "nothing_to_gate"
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -5067,9 +5690,9 @@
           },
           "TG-032": {
             "expected": "REVIEW",
-            "got": "CLEAR",
+            "got": "REVIEW",
             "reasons": [
-              "nothing_to_gate"
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -5246,9 +5869,9 @@
           },
           "TG-012": {
             "expected": "REVIEW",
-            "got": "CLEAR",
+            "got": "REVIEW",
             "reasons": [
-              "nothing_to_gate"
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -5423,9 +6046,9 @@
           },
           "TG-032": {
             "expected": "REVIEW",
-            "got": "CLEAR",
+            "got": "REVIEW",
             "reasons": [
-              "nothing_to_gate"
+              "pre_registered_alternate_routing"
             ],
             "error": null
           },
@@ -5503,7 +6126,14 @@
             "error": null
           }
         }
-      }
+      },
+      "comparisons": {}
     }
-  }
+  },
+  "systems_invalid": [],
+  "systems_safe": [
+    "compromised",
+    "compromised_q",
+    "offline"
+  ]
 }

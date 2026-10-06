@@ -191,21 +191,77 @@ def run_system(system: str, cases: list[dict], vendors: dict,
 
 
 def metrics(results: list[PipelineResult]) -> dict:
+    """Headline numbers for one system on one set.
+
+    `unsafe` is not the only way a gate can be too permissive. A case labelled
+    REVIEW that comes back CLEAR has also been waved through, and it used to be
+    invisible here because I1 never held it in the first place - the
+    pre-registered-alternate bypass scored as a clean success. Both counts are
+    reported, and both must be zero for a system to be called safe.
+    """
     n = len(results)
+    failed = [r.case_id for r in results if r.error]
     correct = sum(1 for r in results if r.correct)
     unsafe = sum(1 for r in results if r.unsafe)
+    ncr = sum(1 for r in results if r.non_clear_release)
     hold_expected = sum(1 for r in results if r.expected == "HOLD")
     non_hold = n - hold_expected
     false_holds = sum(1 for r in results if r.false_hold)
-    return {
+    out = {
         "n": n,
         "accuracy": round(100.0 * correct / n, 1) if n else 0.0,
         "correct": correct,
-        "unsafe_missed_holds": unsafe,
+        "unsafe_hold_releases": unsafe,
+        "unsafe_missed_holds": unsafe,  # kept: older readers use this key
+        "non_clear_releases": ncr,
         "safety_pct": round(100.0 * (hold_expected - unsafe) / hold_expected, 1) if hold_expected else 0.0,
         "missed_hold_ids": [r.case_id for r in results if r.unsafe],
+        "non_clear_release_ids": [r.case_id for r in results if r.non_clear_release],
         "false_holds": false_holds,
         "false_hold_pct": round(100.0 * false_holds / non_hold, 1) if non_hold else 0.0,
+    }
+    if failed:
+        # A row assembled from API errors is not a measurement. The pipeline
+        # fails closed on those cases, so the naive accuracy would read as a
+        # perfect safety score - the one number guaranteed to be quoted. Null
+        # the headline figures rather than publish them.
+        out["invalid"] = True
+        out["extractor_errors"] = len(failed)
+        out["error_case_ids"] = failed[:10]
+        out["accuracy"] = None
+        out["safety_pct"] = None
+        out["false_hold_pct"] = None
+    return out
+
+
+def compare(a: list[PipelineResult], b: list[PipelineResult]) -> dict:
+    """Per-case agreement between two systems.
+
+    Accuracy alone cannot tell a reader whether two systems fail on the same
+    cases. `both_fail` is the number that matters when arguing the AI layer
+    earns its place: cases where neither approach is right are cases the
+    argument does not cover.
+    """
+    by_a = {r.case_id: r for r in a}
+    by_b = {r.case_id: r for r in b}
+    both_fail = a_wins = b_wins = ties = 0
+    for cid in sorted(set(by_a) & set(by_b)):
+        ra, rb = by_a[cid], by_b[cid]
+        if ra.correct and rb.correct:
+            ties += 1
+        elif not ra.correct and not rb.correct:
+            both_fail += 1
+        elif ra.correct:
+            a_wins += 1
+        else:
+            b_wins += 1
+    return {
+        "n_compared": len(set(by_a) & set(by_b)),
+        "both_correct": ties,
+        "both_fail": both_fail,
+        "a_wins": a_wins,
+        "b_wins": b_wins,
+        "ties": ties,
     }
 
 
@@ -223,8 +279,14 @@ def render_main(name: str, table: dict[str, dict]) -> str:
     out.append(head)
     out.append("-" * len(head))
     for s, m in table.items():
+        if m.get("invalid"):
+            out.append(
+                f"{s:<16}{'INVALID':>7}{m.get('extractor_errors', 0):>8}"
+                f"{'-':>10}{'-':>13}"
+            )
+            continue
         out.append(
-            f"{s:<16}{m['accuracy']:>7.1f}{m['unsafe_missed_holds']:>8}"
+            f"{s:<16}{m['accuracy']:>7.1f}{m['unsafe_hold_releases']:>8}"
             f"{m['safety_pct']:>10.1f}{m['false_holds']:>13}"
         )
     return "\n".join(out)
@@ -243,7 +305,12 @@ def render_categories(name: str, per_cat: dict[str, dict], systems: list[str]) -
         cells = []
         for s in systems:
             m = data.get(s)
-            cells.append(f"{m['accuracy']:.0f} (u{m['unsafe_missed_holds']})".rjust(width) if m else "".rjust(width))
+            if not m:
+                cells.append("".rjust(width))
+            elif m.get("invalid"):
+                cells.append("INVALID".rjust(width))
+            else:
+                cells.append(f"{m['accuracy']:.0f} (u{m['unsafe_hold_releases']})".rjust(width))
         out.append(f"    {cat:<26}{data[systems[0]]['n'] if systems and systems[0] in data else 0:>3}  " + "  ".join(cells))
     return "\n".join(out)
 
@@ -292,27 +359,22 @@ def main() -> int:
         "gemini_evaluated": MODEL_SYSTEM in systems,
         "sets": {},
     }
-    if invalid_systems:
-        report["systems_invalid"] = sorted(invalid_systems)
-
     for set_name in args.sets:
         cases = load_cases(SETS[set_name]["path"])
         main_table: dict[str, dict] = {}
         cat_table: dict[str, dict] = {}
         per_case: dict[str, dict] = {}
+        model_results: dict[str, list[PipelineResult]] = {}
 
         for system in systems:
             results = run_system(system, cases, vendors, clock)
             main_table[system] = metrics(results)
-            failed = [r.case_id for r in results if r.error]
-            if failed:
+            if main_table[system].get("invalid"):
                 # A key that is present but rejected, rate-limited or broken must
                 # never produce a row that reads like a model result. The pipeline
                 # fails closed per case, which would otherwise look like 100% safe.
-                main_table[system]["invalid"] = True
-                main_table[system]["extractor_errors"] = len(failed)
-                main_table[system]["error_case_ids"] = failed[:10]
                 invalid_systems.add(system)
+            model_results[system] = results
             for cat, m in by_category(results, assignments).items():
                 cat_table.setdefault(cat, {})[system] = m
             per_case[system] = {
@@ -333,6 +395,11 @@ def main() -> int:
             "metrics": main_table,
             "by_category": cat_table,
             "per_case": per_case,
+            "comparisons": {
+                f"{a}_vs_{b}": compare(model_results[a], model_results[b])
+                for a, b in (("rules_norm", "gemini"), ("gemini", "ai_only"))
+                if a in model_results and b in model_results
+            },
         }
 
         print(render_main(set_name, main_table))
@@ -343,6 +410,20 @@ def main() -> int:
                   f"errors (e.g. {', '.join(m.get('error_case_ids', [])[:5])}). "
                   "Do not quote this row.")
         print()
+
+    # Written here, not before the loop: `invalid_systems` is empty until the
+    # sets have been evaluated, so placing this next to the other report keys
+    # produced a report that always claimed no system was invalid - including
+    # runs where every model case had errored.
+    report["systems_invalid"] = sorted(invalid_systems)
+    report["systems_safe"] = sorted(
+        s for s in systems if s not in invalid_systems
+        and all(
+            not report["sets"][name]["metrics"].get(s, {}).get("unsafe_hold_releases")
+            and not report["sets"][name]["metrics"].get(s, {}).get("non_clear_releases")
+            for name in report["sets"]
+        )
+    )
 
     print(DISCLAIMER)
     if skipped:
