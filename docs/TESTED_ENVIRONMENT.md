@@ -51,5 +51,15 @@ actually been run, and the harness says so rather than filling it in.
 
 ## Notes
 
-`playwright` is not a dependency and is not used. Every UI assertion is made
-against source or against the pipeline, so nothing here drives a browser.
+`playwright` is **not** in `requirements.txt` and is not needed to run or test
+the project. It is used only by `scripts/capture_screenshots.py`, which is a
+one-off authoring tool for the submission screenshots, not part of the app or
+the suite. Install it separately if you want to regenerate them:
+
+```bash
+pip install playwright && playwright install --with-deps chromium
+python scripts/capture_screenshots.py --extractor offline
+```
+
+The tests never drive a browser: every UI assertion is made against the source
+or against the pipeline.
