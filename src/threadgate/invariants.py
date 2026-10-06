@@ -347,11 +347,45 @@ def out_of_band_destination(norm_text: str) -> list[Finding]:
 # Matches words in the *email*, not a decision of the gate. The decision
 # vocabulary is CLEAR / REVIEW / HOLD; `no_change` here is the model's
 # description of what the email asks for.
+#
+# Every alternative below says something about whether a PAYMENT DETAIL is
+# changing. That restriction is the point.
+#
+# The previous version also accepted `disregard`, `ignore`, `no action` and
+# `was a phish`, and those are not statements about payment details - they are
+# the standard vocabulary of a retraction, real or forged. Accepting them meant
+# an email could carry an actionable change in one sentence and, in another,
+# supply the exact words I2b was looking for. A steered model quoting only the
+# second sentence got a CLEAR on a real beneficiary-name change: no destination
+# token appears in that email, so nothing AI-independent caught it.
+#
+# They are gone, and the bare `not` / `n't` / `never` alternatives
+# went with them for the same reason. A negation of a change is only a negation
+# of a change when it negates a change.
 NO_CHANGE_PHRASE = re.compile(
-    r"(\bnot\b|\bn't\b|\bno\s+changes?\b|\bno\s+new\b|\bnever\b|unchanged|\bremains?\b|"
-    r"\bdisregard\b|\bignore\b|\bno\s+action\b|\bas\s+usual\b|\bstands?\b|\bthe\s+same\b|"
-    r"\bdid\s+not\b|\bdo\s+not\b|\bdoes\s+not\b|\bhave\s+not\s+changed\b|"
-    r"\bnothing\s+(?:is\s+|has\s+|will\s+)?chang|\bthere\s+are\s+no\b|\bwas\s+a\s+phish)",
+    r"("
+    # a change to the payment detail is explicitly refused or denied
+    r"\b(?:do|does|did|will|would|can)\s+not\s+(?:change|changing|update|updating|"
+    r"amend|replace|revise)\w*"
+    r"|\b(?:has|have|had)\s+not\s+(?:changed|updated|been\s+changed)\b"
+    r"|\b(?:are|is|were|was)\s+not\s+(?:changing|changing|changing)\b"
+    r"|\bnot\s+(?:changing|changed|updating|updated|amending|replacing|revising)\b"
+    r"|\bnever\s+(?:changing|changed|updat\w*)\b"
+    r"|\b(?:no|not\s+any)\s+(?:changes?|updates?|amendments?|revisions?)\b"
+    r"|\bno\s+new\s+(?:bank|payment|account|remittance|beneficiary)\w*"
+    r"|\bnothing\s+(?:is\s+|has\s+|will\s+|was\s+)?chang\w*"
+    r"|\bwithout\s+chang\w*"
+    # the detail is the same as it was
+    r"|\bunchanged\b"
+    r"|\bdetails?\s+(?:are|is|remain|remains|were|was|have|has)?\s*"
+    r"(?:unchanged|the\s+same|correct|valid|accurate)\b"
+    r"|\bremains?\s+(?:the\s+same|unchanged|as\s+(?:before|usual))\b"
+    r"|\bstill\s+(?:the\s+)?(?:same|current|valid|active|correct)\b"
+    r"|\bcontinue\s+to\s+use\s+(?:the\s+)?(?:current|existing|same)\b"
+    r"|\bthe\s+same\b"
+    r"|\bas\s+(?:before|usual)\b"
+    r"|\bstands?\b"
+    r")",
     re.IGNORECASE,
 )
 
