@@ -99,20 +99,31 @@ email → normalise → token finder → [Gemini: what change does this ask for?
 2. **Deterministic token finder.** Finds account-like numbers, IFSC/IBAN/SWIFT
    codes, amounts and phones with spans, refusing to classify a number as an
    account when nearby context says it is an invoice, a phone or a password.
-3. **The model.** Given the email and a summary of the record, Gemini returns
-   structured claims, each with a verbatim quote. It is never asked whether the
-   change is safe, and it has no field in which to say so.
+3. **The model.** Given **the email and nothing else**, Gemini returns
+   structured claims, each with a verbatim quote. It is never shown the vendor
+   record, the account on file, or the verified domains, and it is never asked
+   whether the change is safe - it has no field in which to say so. This is
+   enforced in code, not just in the prompt: `build_production_prompt` takes no
+   vendor parameter, and a test marks every trusted field with a unique string
+   and asserts it never reaches the request. A model that could see the account
+   on file could shape its reading to agree with it, which would remove the
+   independence the design depends on.
 4. **Evidence validator — the closed-world rule.** A claim is admitted only if
    its quote is found verbatim in the email and its value is locatable in the
    email or in that quote. Anything the model produced from memory or inference
    is dropped, not repaired.
 5. **Comparator.** Normalises presentation and produces a field-level diff
    against the vendor record.
-6. **Invariants — computed without looking at the model.**
+6. **Invariants.** Two kinds. The first set never sees the model's output; the
+   second validates it and can only reject, never substitute.
    - *I1a/I1b*: any account number or branch code in the email that is not on
      file and not a pre-registered alternate is a hold.
+   - *I5*: a destination we recognise that is **not** the currently active one,
+     named in a sentence routing money to it, floors at REVIEW.
    - *I2*: a `no_change` verdict must be quoted.
-   - *I2b*: the quote must actually support the verdict.
+   - *I2b*: the quote must actually support the verdict, in the payment domain.
+   - *I2c*: a `confirmation_request` verdict must ask for confirmation and not
+     issue a change in the same breath.
    - *I3*: change asserted with nothing verifiable is a hold.
    - *I4*: if the destination is in an image, PDF or portal, it is unverifiable
      and held — the app does no OCR and never opens attachments.

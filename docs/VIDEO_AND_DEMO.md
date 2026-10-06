@@ -70,7 +70,8 @@ The badge must stay **HOLD**.
 > "Now the interesting part. I'm going to switch the interpreter to a harness
 > that is *steered to lie* — it always reports 'no change', and in this variant
 > it forges a verbatim quote from the email to justify it.
-> Still HOLD. Zero unsafe outcomes across both case sets.
+> Still HOLD. Across both case sets, zero unsafe hold releases and zero
+> non-CLEAR releases - on these forty cases.
 > Why? Because the account floor never asks the model. It scans the email
 > itself. A model that has been fully compromised buys friction, not releases."
 
@@ -90,7 +91,9 @@ the per-category breakdown.
 
 > "Forty synthetic cases. The rules baseline gets 50% on the pre-frozen set with
 > two unsafe; normalisation fixes the evasion cases but not the reading ones.
-> The steered model: zero unsafe, every time.
+> The steered model: zero unsafe and zero non-CLEAR releases, every time -
+> on these forty cases. That is the scope of the claim, and I'd rather state
+> the limit than overstate the result."
 > `[INSERT: ThreadGate-with-Gemini accuracy and unsafe count, read from
 > results/latest.json after the real run]`
 > This is a gate, not a score. There's no risk score in it, and none is coming.

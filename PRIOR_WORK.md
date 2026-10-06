@@ -1,14 +1,21 @@
 # Prior work statement
 
-Hackathon: **Agent.ai / Devpost hackathon, AI + Cybersecurity track**
+Hackathon: **ForgeHacks Online 2026 — AI + Cybersecurity track**
 Hackathon window: **2026-10-03 12:00 EDT → 2026-10-10 12:00 EDT**
 (2026-10-03 21:30 IST → 2026-10-10 21:30 IST)
 
 ## What existed before the hackathon started
 
-Nothing. There was no prior repository, prototype, dataset, or write-up for
-ThreadGate. The workspace used for this project was empty at the start of the
-event. Every file in this repository — the case corpus, the token finder, the
+**No prior ThreadGate repository, prototype, dataset, or write-up existed.**
+This project was started from an empty workspace during the event window below.
+
+That is a statement about this project, not about the author's background: the
+domain knowledge that shaped the case corpus - business-email compromise,
+invoice-redirection fraud, callback verification - is prior experience brought
+to the project, and is exactly why the corpus looks the way it does. What did
+not exist beforehand is any of the artefacts submitted here.
+
+Every file in this repository — the case corpus, the token finder, the
 evidence validator, the comparator, the invariant layer, the policy engine, the
 rules-only baseline, the evaluation harness, the Streamlit UI, the README, and
 the video script — was written inside the hackathon window.

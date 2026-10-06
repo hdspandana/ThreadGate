@@ -102,9 +102,20 @@ are below and all are reproducible with one command.
 
 ### The security model
 
-Every invariant below is computed without looking at what the model said.
+The invariants split into two kinds, and the difference matters.
 
-**What the gate checks in the email**
+**Model-independent invariants** never see the model's output at all. They read
+the email and the record, and no answer the model gives can weaken them.
+
+**Verdict-validating invariants** do look at what the model said - but only to
+decide whether to *accept* it. They can reject a verdict. They can never
+substitute one, and a rejected verdict always falls through to a
+model-independent check rather than to a decision. An earlier version of this
+README claimed every invariant was computed "without looking at what the model
+said", which was not true of I2 and I2b and would not be a strength if it were:
+a system that ignored the model's output entirely could not use it at all.
+
+**What the gate checks in the email (model-independent)**
 
 - **I1a — Unknown account floor.** If a number in the email looks like a bank
   account and it is not the account on file and not a pre-registered alternate,
@@ -112,18 +123,38 @@ Every invariant below is computed without looking at what the model said.
 - **I1b — Unknown branch/routing code.** The same rule for IFSC, IBAN and SWIFT.
   The closed-world rule covers every supported destination token the scanner can
   see, not only account numbers.
-- **I2 — No-change must be evidenced.** A `no_change` verdict is accepted only if
-  the model quotes the sentence that says so.
-- **I2b — The quote must support the verdict.** Added after an ablation found the
-  hole: a steered model can return `no_change` with a quote copied verbatim from
-  the email, which passes I2 because the words really are there. I2b requires the
-  quoted sentence to actually assert that nothing is changing. Verdict and
-  justification have to agree.
 - **I3 — Change asserted, nothing verifiable.** "Our details have changed, see
   the attached PDF" is held, because there is no value in the message to check.
 - **I4 — Destination out of band.** If the message says the account is in an
   image, a PDF or a portal, the destination cannot be read and is held. See
   below.
+- **I5 — Pre-registered alternate in a routing instruction.** A destination we
+  recognise, that is *not* the currently active one, named in a sentence telling
+  the reader to route money to it, floors at `REVIEW`. I1 is silent on accounts
+  we do know, which is correct for the question it asks and leaves the decision
+  to the model whenever the account named happens to be a real alternate the
+  vendor registered. I5 closes that: known, not currently active, and asked
+  for. It is `REVIEW` rather than `HOLD` on purpose - a registered alternate is
+  a change to be attested, not an unknown destination.
+
+**What the gate checks about what the model said (verdict-validating)**
+
+- **I2 — No-change must be evidenced.** A `no_change` verdict is accepted only
+  if the model quotes the sentence that says so.
+- **I2b — The quote must support the verdict.** Added after an ablation found
+  the hole: a steered model can return `no_change` with a quote copied verbatim
+  from the email, which passes I2 because the words really are there. I2b
+  requires the quoted sentence to assert that nothing is changing, **in the
+  payment domain**. It does not accept retraction vocabulary ("disregard the
+  earlier mail", "no action required", "that was a phish"), because an attacker
+  only has to append one such sentence to an email carrying a live change to
+  manufacture a quote I2b would accept.
+- **I2c — A confirmation request must justify itself the same way.** The
+  quote has to ask for confirmation and must not issue a change in the same
+  breath. `confirmation_request` used to be accepted on any verbatim quote,
+  which made it the cheapest route past the gate.
+- **I6 — The claimed value must be inside the quote offered for it.** See
+  "evidence binding" below.
 
 **What the gate checks about the record it is comparing against**
 
@@ -330,8 +361,14 @@ Read that table carefully, because two rows flatter the baseline:
 
 The categories where reading is genuinely required are **mention_vs_request**
 (talking about a destination vs asking for it to change), **negation** (reading
-"not" in context) and **cross_message** (which end of a thread is live). Those
-are the rows the model is for.
+"not" in context) and **cross_message** (deciding which end of a thread is
+live). Those are the rows the model is for.
+
+`cross_message` is named for what it is: **quoted and forwarded content inside a
+single message** - a `>`-quoted earlier mail, or a forwarded block. It is not
+correlation across separate emails. ThreadGate processes one message at a time
+and holds no state between them; there is no thread store and no cross-message
+memory.
 
 ### The baseline is not a strawman
 
@@ -347,10 +384,24 @@ that the two effects do not get conflated.
 
 A model that has been fully compromised — always reporting `no_change`, in one
 variant not even bothering to justify it, in the other forging a verbatim quote
-from the email — buys **zero** unsafe outcomes. It buys friction: accuracy falls
-and legitimate mail goes to a human instead. The gate fails closed. This is
-enforced by tests, not by hoping: `test_no_unsafe_outcomes_anywhere` runs both
-harnesses over both sets.
+from the email — releases nothing. Across both frozen sets under both harnesses:
+
+| | count |
+| --- | --- |
+| unsafe hold releases (expected `HOLD`, got softer) | **0** |
+| non-CLEAR releases (expected `REVIEW`/`HOLD`, got `CLEAR`) | **0** |
+| false holds (a human asked to look unnecessarily) | 10 of 40 |
+
+It buys friction, not releases: accuracy falls and legitimate mail goes to a
+human instead. Two metrics, not one, because `unsafe` alone cannot see a
+`REVIEW`-labelled case coming back `CLEAR` - no hold was released, so nothing was
+"unsafe", and the pre-registered-alternate bypass scored as a clean success
+until the second metric existed.
+
+Both are zero **on these 40 cases**, and that is the scope of the claim: a
+finite frozen corpus, not a guarantee. It is enforced by tests rather than
+hoped for: `test_no_unsafe_outcomes_anywhere` runs both harnesses over both
+sets and asserts both counts.
 
 ### Reproducing
 
@@ -443,8 +494,10 @@ pip install playwright && playwright install --with-deps chromium
 python scripts/capture_screenshots.py --extractor gemini
 ```
 
-Deployed: the key is read from Streamlit secrets (or `.env` locally) and is
-never written to the repo, logs, or the UI. See `docs/DEPLOY.md`.
+**Deployment.** The key is read from Streamlit secrets (or `.env` locally) and
+is never written to the repo, logs, or the UI. There is no public deployment
+yet - this is run locally or on Streamlit Community Cloud, and a URL will
+appear here once one exists. See `docs/DEPLOY.md`.
 
 ## Layout
 
@@ -455,7 +508,8 @@ src/threadgate/
   extract.py      the model call + the two adversarial harnesses
   validate.py     the closed-world evidence validator
   compare.py      field-level diff against the vendor record
-  invariants.py   I1a/I1b/I2/I2b/I3/I4 - never consult the model
+  invariants.py   I1a/I1b/I3/I4/I5 never consult the model;
+                  I2/I2b/I2c/I6 validate it and can only reject
   clock.py        injected time source, so freshness is a deterministic input
   reference.py    reference version and CURRENT / STALE / MISSING
   attestation.py  single-use verification events and their bindings
