@@ -104,13 +104,28 @@ def test_there_is_a_per_session_cooldown():
     assert "st.session_state" in SRC
 
 
-def test_the_cooldown_storage_holds_nothing_but_a_timestamp():
-    """No caching of pasted email: only a float goes into session_state."""
-    writes = re.findall(r"st\.session_state\.(\w+)\s*=", SRC)
-    assert set(writes) == {"last_run_at"}, (
-        f"session_state stores {sorted(set(writes))}; a pasted email must never "
-        "be cached there"
-    )
+def test_session_state_holds_no_email_content():
+    """No caching of pasted email, in session_state or anywhere else.
+
+    The keys are enumerated rather than allowed to grow unnoticed, and the
+    assertion that matters is the second one: whatever is stored, the pasted
+    message itself is not among it.
+    """
+    writes = set(re.findall(r"st\.session_state\.(\w+)\s*=", SRC))
+    allowed = {
+        "last_run_at",       # float, for the cooldown
+        "attest_store",      # event ids + bindings for the replay demo
+        "minted_event",      # the event just minted
+        "pending_presentation",  # one presentation, consumed on the next run
+    }
+    assert writes <= allowed, f"unexpected session_state keys: {sorted(writes - allowed)}"
+    # and none of them is handed the case or the pasted body
+    for key in writes:
+        for m in re.finditer(rf"st\.session_state\.{key}\s*=\s*(.+)", SRC):
+            value = m.group(1)
+            assert "case" not in value and "body" not in value, (
+                f"session_state.{key} is assigned from the email: {value}"
+            )
 
 
 def test_a_timeout_is_handled_distinctly_from_other_failures():

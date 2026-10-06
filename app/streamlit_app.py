@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import streamlit as st
@@ -22,6 +23,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from threadgate.baseline import rules_only  # noqa: E402
 from threadgate.records import load_cases, load_vendors  # noqa: E402
 from threadgate.clock import SystemClock  # noqa: E402
+from threadgate.attestation import AttestationStore, VerificationEvent  # noqa: E402
 from threadgate.pipeline import run_case  # noqa: E402
 from threadgate.tokens import unique_accounts  # noqa: E402
 
@@ -194,6 +196,66 @@ ATTEST_COLOUR = {
     "NOT_REQUIRED": "#37507a", "PENDING": "#8a5a00",
     "SATISFIED": "#37507a", "REJECTED": "#c1121f",
 }
+# The pipeline emits machine reason codes. They are the right thing to log and
+# the wrong thing to show a judge, so each one is rendered as a sentence and the
+# raw codes go in a collapsed panel. This is presentation only - nothing here is
+# read back into a decision, and the mapping is not a policy input.
+REASON_TEXT = {
+    "unknown_account_token":
+        "An account-like number in this email is not the account on file and not a "
+        "pre-registered alternate.",
+    "pre_registered_alternate_routing":
+        "This names a pre-registered alternate that is not the currently active "
+        "destination, and asks for payments to be routed to it. That is at least a "
+        "REVIEW no matter how the message reads.",
+    "unverifiable_no_values":
+        "The email talks about a payment change but no value in it could be checked "
+        "against the record.",
+    "destination_out_of_band":
+        "The destination lives somewhere this pipeline cannot read - an image, a PDF "
+        "or a portal. Nothing is opened; a human retrieves it out of band.",
+    "no_change_evidenced":
+        "The model reported no change, and the sentence it quoted actually says so.",
+    "nothing_to_gate":
+        "No change was identified, so there is nothing for the gate to decide.",
+    "reference_stale_record":
+        "The record on file is past its confirmation window, so it floors at REVIEW "
+        "rather than CLEAR.",
+    "reference_missing_record":
+        "There is no payment destination on file to check against.",
+    "reference_missing_destination_change":
+        "There is no payment destination on file, and this email asks to change the "
+        "destination.",
+    "attestation_rejected":
+        "A verification event was presented and refused. The decision is unchanged.",
+    "extractor_failed_fail_closed":
+        "The interpreter failed. The gate fails closed rather than guessing.",
+    "I1_UNKNOWN_ACCOUNT_TOKEN":
+        "An account-like number in this email is not on file and not a pre-registered "
+        "alternate.",
+}
+
+
+def explain(reason: str) -> str:
+    """One reason code as a sentence. Unknown codes pass through unchanged.
+
+    Passing through is deliberate: a code with no translation still appears, so
+    a new one shows up on screen as itself rather than vanishing behind a
+    default message that claims to explain it.
+    """
+    if reason in REASON_TEXT:
+        return REASON_TEXT[reason]
+    head = reason.split(":", 1)[0]
+    fields = reason.split(":", 1)[1] if ":" in reason else ""
+    if head == "high_risk_field_change":
+        return f"High-risk field(s) differ from the record: {fields}."
+    if head == "medium_risk_field_change":
+        return f"Medium-risk field(s) differ from the record: {fields}."
+    if head == "verified_low_risk_change":
+        return f"A low-risk field changes: {fields}. A human still attests."
+    return reason
+
+
 ATTEST_NOTE = {
     "NOT_REQUIRED": "No change was identified, so there is nothing to verify.",
     "PENDING": "A human must verify this out of band and attest before it executes. "
@@ -237,7 +299,10 @@ def render(result, baseline_decision: str) -> None:
     with right:
         st.subheader("Why")
         for r in result.decision.reasons:
-            st.markdown(f"- `{r}`")
+            st.markdown(f"- {explain(r)}")
+        with st.expander("Reason codes"):
+            for r in result.decision.reasons:
+                st.code(r)
 
         st.markdown("#### The record this was checked against")
         st.markdown(
@@ -397,12 +462,12 @@ if case is None:
 # trade for a demo, and is why this is not described as rate limiting.
 if "last_run_at" not in st.session_state:
     st.session_state.last_run_at = 0.0
-if mode in MODEL_SYSTEMS and not configured:
-    st.session_state.last_run_at = 0.0
-
+# Only the model-backed extractors are throttled. `offline` is a deterministic
+# test double running locally, so slowing it would cost interactivity for
+# nothing.
 _now = time.monotonic()
 _since = _now - st.session_state.last_run_at
-if _since < MIN_SECONDS_BETWEEN_RUNS:
+if mode in MODEL_SYSTEMS and configured and _since < MIN_SECONDS_BETWEEN_RUNS:
     st.info(
         f"One request every {MIN_SECONDS_BETWEEN_RUNS:.0f}s in the demo. "
         f"Retrying in {MIN_SECONDS_BETWEEN_RUNS - _since:.1f}s - press Rerun, "
@@ -410,11 +475,28 @@ if _since < MIN_SECONDS_BETWEEN_RUNS:
     )
     st.stop()
 
+# The single-use store lives in the session, so the replay demo has somewhere to
+# remember that an event was already spent. It holds event ids and bindings only
+# - never the email, never the record.
+if "attest_store" not in st.session_state:
+    st.session_state.attest_store = AttestationStore()
+if "minted_event" not in st.session_state:
+    st.session_state.minted_event = None
+if "pending_presentation" not in st.session_state:
+    st.session_state.pending_presentation = None
+
+# Consumed once, then cleared, so a presentation is applied to exactly one run.
+presented = st.session_state.pending_presentation
+st.session_state.pending_presentation = None
+
 try:
     # The wall clock, because a deployed demo should judge the record
     # against real time. The evaluation pins the date instead so its
     # numbers are reproducible.
-    result = run_case(case, VENDORS, extractor_mode=mode, clock=SystemClock())
+    result = run_case(
+        case, VENDORS, extractor_mode=mode, clock=SystemClock(),
+        store=st.session_state.attest_store, presented_event=presented,
+    )
     st.session_state.last_run_at = time.monotonic()
 except TimeoutError:
     st.session_state.last_run_at = time.monotonic()
@@ -447,6 +529,72 @@ if result.elapsed_ms and result.elapsed_ms > REQUEST_TIMEOUT_SECONDS * 1000:
 
 baseline = rules_only(case, VENDORS[case["vendor_id"]]).decision
 render(result, baseline)
+
+# --- the single-use binding, demonstrated -------------------------------
+# Nothing here is a signature. The point being shown is narrower and true: a
+# verification is bound to one request, one destination and one record version,
+# and presenting it a second time is refused even though nothing about it has
+# changed. That is a property of the binding, not of cryptography.
+with st.expander("Demonstrate the single-use verification binding"):
+    st.caption(
+        "This is **not** a cryptographic signature and proves nothing about who "
+        "attested. It shows one thing: an attestation is bound to this request, this "
+        "destination digest and this reference version, and it can be spent once."
+    )
+    ctx = result.verification
+    if ctx is None:
+        st.info("No verification context for this case.")
+    else:
+        st.code(
+            f"request      {ctx.request_id}\n"
+            f"destination  {ctx.destination_digest[:24]}...\n"
+            f"reference    {ctx.reference_version}\n"
+            f"vendor       {ctx.vendor_id}",
+            language="text",
+        )
+        mint, replay = st.columns(2)
+        with mint:
+            if st.button("Mint and present a verification event", type="secondary"):
+                event = VerificationEvent(
+                    event_id=f"EVT-{ctx.request_id[:12]}",
+                    vendor_id=ctx.vendor_id,
+                    request_id=ctx.request_id,
+                    destination_digest=ctx.destination_digest,
+                    reference_version=ctx.reference_version,
+                    attested_by="demo",
+                    attested_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                )
+                st.session_state.minted_event = event
+                st.session_state.pending_presentation = event
+                st.rerun()
+        with replay:
+            already = st.session_state.minted_event is not None
+            if st.button(
+                "Present the same event again",
+                type="secondary",
+                disabled=not already,
+                help="Mint an event first." if not already else
+                     "Same event id, same binding - and it must be refused.",
+            ):
+                st.session_state.pending_presentation = st.session_state.minted_event
+                st.rerun()
+
+        if result.decision.attestation_status in ("SATISFIED", "REJECTED"):
+            st.markdown(
+                f"**Outcome:** `{result.decision.attestation_status}` "
+                f"/ `{result.decision.attestation_code}`"
+            )
+            st.caption(ATTEST_NOTE.get(result.decision.attestation_status, ""))
+            if result.decision.attestation_code == "ATTESTATION_REPLAY":
+                st.success(
+                    "The same event, presented unchanged against the same request, "
+                    "was refused. That is the binding working - not a signature, "
+                    "and not proof of who attested."
+                )
+        if st.session_state.minted_event and st.button("Clear the demo store"):
+            st.session_state.attest_store = AttestationStore()
+            st.session_state.minted_event = None
+            st.rerun()
 
 st.divider()
 st.subheader("The whole corpus, not one email")
