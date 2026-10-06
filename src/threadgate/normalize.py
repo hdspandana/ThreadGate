@@ -8,6 +8,37 @@ raw text so every finding can still be highlighted in the original email.
 Only the *display* is derived from the raw text; every comparison in the
 pipeline runs on the normalised text the model also saw. That keeps the model,
 the token finder and the validator looking at exactly the same string.
+
+THE SUPPORTED SET
+
+This is deliberate folding of an enumerated table, NOT Unicode NFKC. NFKC is
+not an option here: it rewrites variable-length substrings (a ligature to two
+letters, a compatibility character to a sequence), which would break the
+one-character-to-one-index map that every span in this pipeline rests on. A
+claim of "NFKC with correct offsets" would be a claim of NFKC plus a second,
+separate offset bug.
+
+What is folded, and only what is folded:
+
+  1. Invisible characters, deleted: ZWSP ZWNJ ZWJ word-joiner BOM soft-hyphen
+  2. Unusual dashes -> ASCII hyphen-minus
+  3. Unusual spaces (NBSP, figure, thin, hair, ideographic, tabs, CR) -> space
+  4. Homoglyph digits -> ASCII: fullwidth, Arabic-Indic, Extended Arabic-Indic
+  5. Cyrillic letters that survive a side-by-side glance at a Latin one -> ASCII
+
+Everything else passes through unchanged. Confusables outside table 5 are NOT
+folded - Devanagari, Greek, Armenian, mathematical alphanumerics, fullwidth
+Latin. Folding those would mean guessing at intent in scripts this system does
+not handle, and a wrong guess corrupts a real string.
+
+That is safe rather than merely tidy, because the security-critical check does
+not depend on this table. The destination floor (I1) scans for ANY long digit
+run and compares it against the record, so an account number written in
+Devanagari or mathematical bold is still caught: Python's `\\d` matches every
+Unicode decimal digit. Normalisation decides how well the KEYWORD rules and the
+model read the email; the closed-world floor does not depend on it. See
+tests/test_normalization_contract.py, which asserts exactly that - including
+that an unsupported confusable does not produce a false CLEAR.
 """
 
 from __future__ import annotations
@@ -56,8 +87,8 @@ _CONFUSABLE = {
     "\u0425": "X", "\u0445": "x",  # Х х
     "\u0456": "i", "\u0406": "I",  # і І
     "\u0455": "s", "\u0405": "S",  # ѕ Ѕ
-    "\u04bb": "h", "\u04bb": "h",  # һ
-    "\u0501": "d", "\u0501": "d",  # ԁ
+    "\u04bb": "h",  # һ
+    "\u0501": "d",  # ԁ
 }
 
 # Homoglyph digits folded to ASCII.
@@ -109,6 +140,11 @@ def normalize_text(raw: str) -> NormalizedText:
             out.append(_DIGIT_FOLD[ch])
             idx.append(i)
             applied.add("digit_folded")
+            continue
+        if ch in _CONFUSABLE:
+            out.append(_CONFUSABLE[ch])
+            idx.append(i)
+            applied.add("confusable_folded")
             continue
         out.append(ch)
         idx.append(i)
