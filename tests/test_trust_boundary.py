@@ -30,7 +30,6 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from threadgate.extract import (  # noqa: E402
-    AI_ONLY_SYSTEM_PROMPT,
     PRODUCTION_SYSTEM_PROMPT,
     build_ai_only_prompt,
     build_production_prompt,
@@ -208,8 +207,14 @@ def test_the_prompt_sent_to_the_api_carries_no_record(monkeypatch):
 
     vendor = secret_vendor()
     nt = normalize_text(EMAIL)
-    # The extractor is called with the email only - passing the vendor is not
-    # even possible, which is the point of the signature change.
+    # The keyword form is asserted, not the positional one, and that precision
+    # is the whole test. `gemini_extract(nt, model=None)` takes a second
+    # positional parameter, so a sloppy `gemini_extract(nt, vendor)` binds the
+    # record to the model *name* - silently accepted, and harmless only because
+    # the record never reaches the prompt either way. `vendor=` is what must be
+    # impossible, and it is.
+    with pytest.raises(TypeError):
+        gemini_extract(nt, vendor=vendor)
     gemini_extract(nt)
 
     assert SECRET not in captured["contents"]
