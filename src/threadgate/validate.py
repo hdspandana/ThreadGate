@@ -5,9 +5,10 @@ the email. Concretely, for an output to survive validation:
 
   1. Every `evidence` string must be found verbatim in the email text the model
      was given (whitespace-tolerant, offsets preserved).
-  2. Every `new_value` must be findable in the email, or inside its own
-     evidence string. A value the model produced from memory or inference is
-     dropped.
+  2. Every `new_value` must occur inside its own evidence span - the quote the
+     model offered has to actually contain the value it is offered for. A value
+     the model produced from memory, inferred, or lifted from a different part
+     of the email is dropped.
   3. If the model states an `old_value` for a field we hold on file and it does
      not match the record, the claim is kept but flagged - the model may be
      reading a different record, and that is worth showing the analyst.
@@ -76,16 +77,42 @@ def _value_candidates(value: str) -> list[str]:
 
 
 def _locate_value(nt: NormalizedText, value: str, evidence_span: tuple[int, int] | None):
-    """Find a value in the email, or inside the claim's own evidence."""
+    """Find a value INSIDE the claim's own evidence span.
+
+    The quote is the warrant for the value, so the value has to be in it. The
+    previous version searched the whole email first and only fell back to the
+    evidence, which broke the binding: a claim could quote one sentence and
+    carry a value that appears somewhere else in the message entirely.
+
+    That matters because an email routinely contains several payment numbers.
+    "Our old account 1111 is closing" and "our new account is 2222" are two
+    sentences about two numbers, and a claim that new_value is 1111 while
+    quoting the sentence about 2222 is not a claim the quote supports - but it
+    validated, because 1111 was in the email. The analyst reading the
+    highlighted evidence would have been shown a quote that says the opposite
+    of the value attached to it.
+
+    The value is now located only within the span the model quoted. If it is not
+    there, the claim is inadmissible and is dropped rather than repaired.
+    """
+    if evidence_span is None:
+        return None
+    s0, s1 = evidence_span
+    ev = nt.text[s0:s1]
     for cand in _value_candidates(value):
-        span = find_span(nt.text, cand)
+        span = find_span(ev, cand)
         if span:
-            return span
-    if evidence_span:
-        ev = nt.text[evidence_span[0]: evidence_span[1]]
-        for cand in _value_candidates(value):
-            if re.sub(r"\s+", " ", cand).lower() in re.sub(r"\s+", " ", ev).lower():
-                return evidence_span
+            return (s0 + span[0], s0 + span[1])
+    # Separator-insensitive fallback. The model may report a value with
+    # different spacing or punctuation than the quote uses - "5010 0234 559 821"
+    # against "50100234559821". Precise offsets are lost here and the evidence
+    # span is returned instead; the property being enforced is containment, and
+    # the evidence span is still the correct thing to highlight.
+    ev_key = re.sub(r"[^0-9a-z]", "", ev.lower())
+    for cand in _value_candidates(value):
+        key = re.sub(r"[^0-9a-z]", "", cand.lower())
+        if key and key in ev_key:
+            return evidence_span
     return None
 
 
