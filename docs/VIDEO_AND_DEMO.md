@@ -83,7 +83,7 @@ The badge must stay **HOLD**.
 > never opens attachments — so the safe answer is HOLD, never CLEAR. If the
 > destination isn't in text, the text pipeline cannot verify it."
 
-### 2:40–3:00 — The numbers, and what they aren't
+### 2:40–2:56 — The numbers, and what they aren't
 
 **On screen:** press **Run 20 cases across every system**, show the table and
 the per-category breakdown.
@@ -91,8 +91,40 @@ the per-category breakdown.
 > "Forty synthetic cases. The rules baseline gets 50% on the pre-frozen set with
 > two unsafe; normalisation fixes the evasion cases but not the reading ones.
 > The steered model: zero unsafe, every time.
+> `[INSERT: ThreadGate-with-Gemini accuracy and unsafe count, read from
+> results/latest.json after the real run]`
 > This is a gate, not a score. There's no risk score in it, and none is coming.
 > Code is in the repo; everything here is reproducible with one command."
+
+### 2:56–3:05 — What the human does next
+
+**On screen:** back to TG-001's **Before anything executes** checklist.
+
+> "And then a person. The gate doesn't update anything — it hands over the exact
+> diff and a callback script: call the number already on file, not any number in
+> the email; read the account back digit by digit; two-person approval. Once
+> that's verified out of band, the record is updated and the next run gates
+> against the new one. The prototype stops at the decision; it doesn't store the
+> attestation."
+> That last sentence is a limit, and saying it is worth more than hiding it.
+
+---
+
+## Where the real Gemini numbers go
+
+After `python eval/run_eval.py --require-gemini`, open `results/latest.json`
+and fill these three places. Nothing else in the script needs changing.
+
+| Place | What to read | What to say |
+| --- | --- | --- |
+| 1:15–1:50, the negation beat | n/a | unchanged — the AI value story does not depend on a score |
+| 2:40–2:56, the numbers beat | `sets.v1.metrics.gemini` | "ThreadGate with the real model gets X% on the pre-frozen set with Y unsafe" |
+| 2:40–2:56, optional | `sets.v1.metrics.ai_only` vs `gemini` | "the same model, deciding instead of interpreting, gets Z%" |
+| 2:40–2:56, optional | `hybrid_no_scan`, `hybrid_no_validation` | "remove the destination scan and accuracy drops to A%; remove evidence validation and it drops to B%" |
+
+**Do not** fill any of these from the `offline` row, from the `compromised`
+rows, or from anything other than `results/latest.json`. The offline double is a
+regression guard, not a model.
 
 ---
 

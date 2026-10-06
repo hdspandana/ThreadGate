@@ -294,13 +294,38 @@ Read this part.
   human must verify, and hands them the exact diff and a checklist. The human
   still makes the call.
 
+### Not built, and not claimed
+
+Stated separately from the limits above, because these are absences rather than
+weaknesses, and a reader who assumed otherwise would be misled about what this
+prototype guarantees:
+
+- **No replay protection.** There is no attestation store, so a verification
+  event cannot be bound to a specific request and cannot be rejected as a
+  replay. The gate decides *that* a human must attest; it does not record that
+  they did, and nothing stops the same attestation being presented twice.
+- **No reference version lineage.** The vendor record has no version history.
+  There is a current value and a set of pre-registered alternates, and that is
+  the whole reference model. An older version of a record cannot be detected as
+  older, because older versions are not retained. A record with a field missing
+  is treated conservatively — a blank never matches a requested value, and a
+  missing account on file makes every account token unrecognised rather than
+  collapsing the check — but that is escalation, not versioning.
+- **No OCR, no attachment parsing.** Covered above, restated here so the list is
+  complete in one place.
+- **No risk score.** Nothing here produces a number that a human is expected to
+  trade off against. See `tests/test_scope.py`.
+
+`tests/test_reference_and_attestation.py` fails if any of these appears in the
+source without this section being updated in the same change.
+
 ## Run it
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
-python -m pytest            # 81 tests, no network needed
+python -m pytest            # 129 tests, no network needed
 python scripts/secret_scan.py   # nothing credential-like in the tree or history
 python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
 python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped

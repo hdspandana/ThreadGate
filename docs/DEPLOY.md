@@ -8,7 +8,10 @@ stored as a secret rather than in the repo.
 - The repo must be public on GitHub. Devpost judges need to read the code.
 - Confirm nothing sensitive is committed:
   ```bash
-  git ls-files | xargs grep -l "AIza" || echo "clean"
+  python scripts/secret_scan.py
+  # or, equivalently, the grep form - note the {20,} so the
+  # literal string "AIza" in these docs does not match itself:
+  git ls-files | xargs grep -lE "AIza[0-9A-Za-z_\-]{20,}" || echo "clean"
   git check-ignore .env .streamlit/secrets.toml
   ```
   `.env` and `.streamlit/secrets.toml` are both in `.gitignore`.

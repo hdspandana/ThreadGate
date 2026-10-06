@@ -50,6 +50,11 @@ def account_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
     for tok in unique_accounts(tokens):
         if vendor.is_known_account(tok.normalized):
             continue
+        on_file = vendor.current("account_number")
+        # A record with no account on file is not a normal state and must not be
+        # rendered as if one were there; it is also not a reason to skip the
+        # finding, so it changes the wording and nothing else.
+        on_file_hint = f"****{on_file[-4:]}" if on_file else "no account on file"
         findings.append(
             Finding(
                 code="I1_UNKNOWN_ACCOUNT_TOKEN",
@@ -57,7 +62,7 @@ def account_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
                 message=(
                     f"Account-like number {tok.masked} appears in this email and is not "
                     f"the account on file for {vendor.display_name} "
-                    f"(****{vendor.current('account_number')[-4:]}), and is not a "
+                    f"({on_file_hint}), and is not a "
                     "pre-registered alternate."
                 ),
                 snippet=tok.raw.strip(),

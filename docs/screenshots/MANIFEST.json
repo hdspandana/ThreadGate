@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-10-06T03:21:35+00:00",
+  "commit": "fb1eba1156a26069d4ae62ce42050e71a6bcd5ea",
+  "extractor": "offline",
+  "gemini_backed": false,
+  "decision_vocabulary": [
+    "CLEAR",
+    "REVIEW",
+    "HOLD"
+  ],
+  "note": "Captured with the deterministic offline test double, with no GEMINI_API_KEY present. This is NOT a model result and must never be presented as one. Re-run with --extractor gemini once the key is available.",
+  "shots": [
+    {
+      "file": "01_pre_registered_REVIEW.png",
+      "case": "TG-012",
+      "decision": "REVIEW"
+    },
+    {
+      "file": "02_destination_change_HOLD.png",
+      "case": "TG-001",
+      "decision": "HOLD"
+    },
+    {
+      "file": "03_prompt_injection_HOLD.png",
+      "case": "TG-015",
+      "decision": "HOLD"
+    },
+    {
+      "file": "04_negation_CLEAR.png",
+      "case": "TG-007",
+      "decision": "CLEAR"
+    },
+    {
+      "file": "05_evaluation_comparison.png",
+      "case": null,
+      "decision": null
+    }
+  ]
+}

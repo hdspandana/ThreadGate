@@ -6,3 +6,4 @@ __pycache__/
 data/runs/
 *.egg-info/
 .DS_Store
+results/eval_*.json

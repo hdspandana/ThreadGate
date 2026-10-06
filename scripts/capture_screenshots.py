@@ -23,8 +23,11 @@ screenshots must be labelled accordingly.
 from __future__ import annotations
 
 import argparse
+import json
 import re
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,6 +107,7 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     captured: list[Path] = []
     problems: list[str] = []
+    manifest: list[dict] = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(args=["--no-sandbox"])
@@ -123,6 +127,7 @@ def main() -> int:
             path = OUT / filename
             page.screenshot(path=str(path), full_page=False)
             captured.append(path)
+            manifest.append({"file": filename, "case": case_id, "decision": badge.split()[0]})
             print(f"  {filename:38} {case_id}  badge={badge!r}")
 
         # 5 - the corpus comparison table, on whichever case set is selected
@@ -133,9 +138,40 @@ def main() -> int:
         path = OUT / "05_evaluation_comparison.png"
         page.screenshot(path=str(path), full_page=True)
         captured.append(path)
+        manifest.append({"file": "05_evaluation_comparison.png", "case": None, "decision": None})
         print(f"  {'05_evaluation_comparison.png':38} corpus")
 
         browser.close()
+
+    # Provenance, so a screenshot can never be mistaken for something it is not.
+    gemini_backed = args.extractor == "gemini"
+    manifest_path = OUT / "MANIFEST.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "commit": subprocess.run(
+                    ["git", "rev-parse", "HEAD"], capture_output=True, text=True
+                ).stdout.strip(),
+                "extractor": args.extractor,
+                "gemini_backed": gemini_backed,
+                "decision_vocabulary": list(DECISIONS),
+                "note": (
+                    "Captured against the real Gemini model."
+                    if gemini_backed
+                    else "Captured with the deterministic offline test double, with no "
+                    "GEMINI_API_KEY present. This is NOT a model result and must never "
+                    "be presented as one. Re-run with --extractor gemini once the key "
+                    "is available."
+                ),
+                "shots": manifest,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print(f"  {'MANIFEST.json':38} provenance (gemini_backed={gemini_backed})")
 
     print(f"\n{len(captured)} screenshot(s) in {OUT}")
     for c in captured:

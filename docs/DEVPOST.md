@@ -80,7 +80,7 @@ on file, and if not, does a human have to look at it?**
 ### 2. Technical approach and components
 
 **Stack:** Python, Google Gemini (`gemini-2.5-flash`) for interpretation only,
-Pydantic for output contracts, Streamlit for the demo, pytest for the 81-test
+Pydantic for output contracts, Streamlit for the demo, pytest for the 129-test
 suite. No embeddings, no vector store, no OCR, no URL scanning, no threat feed.
 
 The pipeline is deliberately asymmetric. The model sits in exactly one box, and
@@ -209,6 +209,35 @@ README:
 > transfer to the field, or that a token-less request can be caught without a
 > human.
 
+### Not built, and not claimed
+
+Say this if a judge asks what happens after the decision, because the answer is
+"the prototype stops there":
+
+- **No replay protection.** There is no attestation store. The gate decides
+  *that* a human must attest; it does not record that they did, and it cannot
+  reject the same attestation presented twice.
+- **No reference version lineage.** The vendor record has no version history —
+  just a current value and a set of pre-registered alternates. An old version
+  cannot be detected as old. A record with a field missing is handled
+  conservatively (a blank never matches a requested value, and a missing account
+  on file makes every account token unrecognised), but that is escalation, not
+  versioning.
+- **No OCR, no attachment parsing, no risk score, no mail-flow integration.**
+
+Both absences are asserted as absences by
+`tests/test_reference_and_attestation.py`, which fails if the code ever gains
+them without this document being updated in the same change.
+
+### Screenshot provenance
+
+`docs/screenshots/MANIFEST.json` records, for every capture, which extractor
+produced it and whether it is Gemini-backed. The shots committed at the time of
+writing were captured with the deterministic offline test double and
+`gemini_backed: false`; they are internal evidence of the UI, **not** evidence
+of model behaviour, and must not be captioned as Gemini output. Re-running
+`python scripts/capture_screenshots.py --extractor gemini` flips that flag.
+
 ## Submission checklist
 
 - [x] Title, short description, track
@@ -229,11 +258,16 @@ README:
    **2** if any model system was skipped, so a silently absent key cannot look
    like a completed run. Output lands in `results/`.
 2. Re-run `python scripts/kill_gate.py` and `python -m pytest`; both must be
-   green on the final commit (81 tests, 17 kill-gate checks).
+   green on the final commit (129 tests, 17 kill-gate checks).
 3. `git log --reverse` — the first commit must be dated after 2026-10-03 12:00
    EDT / 21:30 IST.
-4. Confirm no key is committed: `git ls-files | xargs grep -l AIza` must be
-   empty. `python scripts/secret_scan.py` checks the tree and the full history.
+4. Confirm no key is committed: `python scripts/secret_scan.py` must print
+   `RESULT: clean`. It checks the working tree *and* every committed blob,
+   and it already excludes the literal pattern strings that appear in this
+   file and in `secret_scan.py` itself.
+   If you prefer the grep form, it must include the length suffix:
+   `git ls-files | xargs grep -lE 'AIza[0-9A-Za-z_-]{20,}'`.
+   The bare word `AIza` will not do — three tracked files contain it.
 5. Re-capture the screenshots against the real model path
    (`python scripts/capture_screenshots.py --extractor gemini`) so the corpus
    shot shows a populated `gemini` row instead of a skip warning, then commit
