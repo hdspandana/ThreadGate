@@ -11,6 +11,7 @@ import html
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import streamlit as st
@@ -50,6 +51,17 @@ except ImportError:  # pragma: no cover
 # Colours are chosen so that nothing reads as "approved". There is deliberately
 # no green: CLEAR means "no change was identified by this prototype", which is
 # not a statement that the email is safe, and it must not look like one.
+# --- limits ---------------------------------------------------------------
+# A pasted email is untrusted input handed to a paid API. These bound it. They
+# are deliberately modest: this is a demo that runs on a shared community tier,
+# and the goal is that one person clicking a button cannot burn the key or hang
+# the app. This is NOT authentication, NOT a distributed rate limit and NOT a
+# security boundary - a determined caller still talks to the API directly. The
+# security boundary is the pipeline, which does not trust the UI at all.
+MAX_EMAIL_CHARS = 20_000
+MIN_SECONDS_BETWEEN_RUNS = 2.0
+REQUEST_TIMEOUT_SECONDS = 45.0
+
 BADGE = {
     "HOLD": ("#c1121f", "HOLD - verify out of band before anything executes"),
     "REVIEW": ("#8a5a00", "REVIEW - change matches the record; a human still attests"),
@@ -91,10 +103,14 @@ def api_key() -> str | None:
 
 
 def key_status() -> tuple[bool, str]:
-    k = api_key()
-    if not k:
-        return False, "not configured"
-    return True, f"configured (ends ...{k[-4:]})"
+    """Present or absent. Nothing else.
+
+    An earlier version printed the last four characters. Four characters of a
+    secret is still part of the secret, it is rendered into a public demo, and
+    it lands in any screenshot taken of the sidebar. Whether a key is present is
+    the only thing the user needs to know.
+    """
+    return (True, "configured") if api_key() else (False, "not configured")
 
 
 def export_key_to_environment() -> None:
@@ -352,6 +368,13 @@ else:
         placeholder="From: ...\nSubject: ...\n\nPaste the email here.",
     )
     if body.strip():
+        if len(body) > MAX_EMAIL_CHARS:
+            # Rejected before the pipeline sees it, and before any API call.
+            st.error(
+                f"This email is {len(body):,} characters. The demo accepts up to "
+                f"{MAX_EMAIL_CHARS:,}. Nothing has been sent anywhere."
+            )
+            st.stop()
         first_line = body.strip().splitlines()[0]
         case = {
             "id": "ad-hoc",
@@ -369,14 +392,58 @@ if case is None:
     st.info("Choose a frozen case on the left, or paste an email.")
     st.stop()
 
+# A per-session cooldown on model-backed runs. Held in session_state, so it is
+# per browser session and costs nothing to a second visitor - which is the right
+# trade for a demo, and is why this is not described as rate limiting.
+if "last_run_at" not in st.session_state:
+    st.session_state.last_run_at = 0.0
+if mode in MODEL_SYSTEMS and not configured:
+    st.session_state.last_run_at = 0.0
+
+_now = time.monotonic()
+_since = _now - st.session_state.last_run_at
+if _since < MIN_SECONDS_BETWEEN_RUNS:
+    st.info(
+        f"One request every {MIN_SECONDS_BETWEEN_RUNS:.0f}s in the demo. "
+        f"Retrying in {MIN_SECONDS_BETWEEN_RUNS - _since:.1f}s - press Rerun, "
+        "or just wait a moment and interact again."
+    )
+    st.stop()
+
 try:
     # The wall clock, because a deployed demo should judge the record
     # against real time. The evaluation pins the date instead so its
     # numbers are reproducible.
     result = run_case(case, VENDORS, extractor_mode=mode, clock=SystemClock())
-except Exception as exc:  # noqa: BLE001
-    st.error(f"Pipeline failed: {exc}")
+    st.session_state.last_run_at = time.monotonic()
+except TimeoutError:
+    st.session_state.last_run_at = time.monotonic()
+    st.error(
+        "The model did not respond in time. Nothing has been decided: treat this "
+        "request as HOLD and verify out of band. Press Rerun to try again."
+    )
     st.stop()
+except Exception as exc:  # noqa: BLE001
+    st.session_state.last_run_at = time.monotonic()
+    # Deliberately not `st.exception` and not the raw message. A traceback in a
+    # public demo leaks module layout, and an exception string can carry back the
+    # email text that was just pasted. The safe outcome is stated instead; the
+    # class name is enough for someone debugging, and it goes in a collapsed
+    # panel rather than on the page.
+    st.error(
+        "The gate could not process this request. It has been held for human "
+        "review - nothing has been cleared."
+    )
+    with st.expander("Diagnostics"):
+        st.code(f"{type(exc).__name__}")
+    st.stop()
+
+if result.elapsed_ms and result.elapsed_ms > REQUEST_TIMEOUT_SECONDS * 1000:
+    st.warning(
+        f"This request took {result.elapsed_ms / 1000:.1f}s. The gate is "
+        "synchronous by design; a slow model shows up as latency, not as a "
+        "weaker decision."
+    )
 
 baseline = rules_only(case, VENDORS[case["vendor_id"]]).decision
 render(result, baseline)

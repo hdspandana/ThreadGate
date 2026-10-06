@@ -170,6 +170,29 @@ class ExtractorError(RuntimeError):
 # Gemini
 # ---------------------------------------------------------------------------
 
+class ModelTimeoutError(ExtractorError, TimeoutError):
+    """A model call that never came back.
+
+    Both, deliberately.
+
+    An ExtractorError because that is the contract the pipeline is written
+    against: any failure to interpret the email fails closed to HOLD, and a
+    caller must not have to know which failure it was in order to be safe.
+
+    A TimeoutError so the UI can say "the model did not answer" instead of
+    "something went wrong", and can offer a retry rather than implying the
+    request was rejected.
+    """
+
+
+def _is_timeout(exc: Exception) -> bool:
+    """Best-effort: SDKs name timeouts inconsistently across transports."""
+    name = type(exc).__name__.lower()
+    if "timeout" in name or "deadline" in name:
+        return True
+    return "timeout" in str(exc).lower() or "deadline" in str(exc).lower()
+
+
 def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
     """The gate's interpretation step. Receives the email and nothing else.
 
@@ -199,7 +222,21 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
         logging.getLogger(name).setLevel(logging.ERROR)
 
     model = model or os.environ.get("THREADGATE_MODEL", "gemini-2.5-flash")
-    client = genai.Client(api_key=api_key)
+    # A bounded request. Without this a stalled connection blocks the calling
+    # thread for as long as the OS default allows, and the retry loop below then
+    # multiplies it by three - which in a synchronous UI is the difference
+    # between a slow page and a session nobody can use. It is configurable
+    # because the right value depends on where this runs.
+    timeout_ms = int(os.environ.get("THREADGATE_HTTP_TIMEOUT_MS", "30000"))
+    try:
+        client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=timeout_ms),
+        )
+    except Exception:  # noqa: BLE001 - older SDKs take a plain dict
+        client = genai.Client(
+            api_key=api_key, http_options={"timeout": timeout_ms}
+        )
     config = types.GenerateContentConfig(
         temperature=0.0,
         top_p=0.0,
@@ -227,6 +264,14 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
         except Exception as exc:  # noqa: BLE001 - surface after retries
             last_err = exc
             time.sleep(0.6 * (attempt + 1))
+            if _is_timeout(exc) and attempt == 2:
+                # Raised after the backoff, so a timeout costs the same three
+                # attempts as any other failure. A timeout that gave up early
+                # would make the gate weaker on exactly the cases where the
+                # model is slowest to answer.
+                raise ModelTimeoutError(
+                    f"the model did not respond within {timeout_ms}ms: {exc}"
+                ) from exc
     raise ExtractorError(f"Gemini call failed after retries: {last_err}")
 
 

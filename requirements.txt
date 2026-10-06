@@ -1,6 +1,19 @@
-google-genai>=1.0,<3
-pydantic>=2.7
-python-dotenv>=1.0
-streamlit>=1.35
-pytest>=8.0
-rich>=13.0
+# Pinned to the combination the suite was actually run against, not to whatever
+# happens to be current. The lower bound is the tested version, so an install
+# cannot silently resolve below something that was verified; the upper bound is
+# the next major version, so a breaking release cannot arrive unannounced.
+#
+# Tested on Python 3.13.14. The full verification sequence for a clean
+# environment is in docs/TESTED_ENVIRONMENT.md.
+
+# --- runtime ---------------------------------------------------------------
+pydantic>=2.13.4,<3              # Extraction/Claim schema, response_schema
+python-dotenv>=1.2.4,<2          # local .env only; deployments use st.secrets
+google-genai>=2.28.0,<3          # the only model SDK in the project
+
+# --- interface -------------------------------------------------------------
+streamlit>=1.65.0,<2             # demo UI; Community Cloud is the only host
+
+# --- evaluation and development -------------------------------------------
+pytest>=9.0.3,<10
+rich>=15.0.0,<16
