@@ -4,16 +4,11 @@ The gate is only as good as the record it checks against, so this module pins
 down what happens when that record is incomplete, and what the system does and
 does not promise about it.
 
-Two properties are asserted as *absent* rather than present, because building
-them would mean designing a reference-versioning and attestation-storage
-subsystem, which is out of scope and is not claimed anywhere:
-
-  * stale-reference detection (no reference version history exists)
-  * replay protection (no attestation store exists)
-
-`test_nothing_claims_the_absent_properties` fails if the code ever grows them
-without the documentation being updated, which is the failure mode that would
-actually be dangerous - a README promising a control the binary does not have.
+Replay protection, reference-version lineage and stale-reference escalation are
+now implemented; their regression tests live in
+`test_verification_and_lineage.py`. What is still absent is asserted as absent
+here, and the README has to keep saying so: OCR, attachment parsing, risk
+scoring, cryptographic signatures, and automatic reference updates.
 """
 
 from __future__ import annotations
@@ -21,10 +16,7 @@ from __future__ import annotations
 import copy
 import dataclasses
 from pathlib import Path
-import re
 import sys
-
-import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "src") not in sys.path:
@@ -110,39 +102,14 @@ def test_pre_registered_alternates_survive_a_blanked_current_account(vendors):
     assert v.account_status("50100234558812", ).startswith("allowlisted:")
 
 
-# ---------------------------------------------------------------------------
-# the two properties that are deliberately absent
-# ---------------------------------------------------------------------------
-ABSENT = {
-    "stale reference / version lineage": re.compile(
-        r"\b(reference_version|reference_revision|stale_reference|version_lineage)\b", re.I),
-    "replay protection": re.compile(
-        r"\b(attestation_store|replay_protection|nonce|replay_token)\b", re.I),
-}
+def test_the_readme_states_what_is_still_not_built():
+    """The honest-limits list must track reality in both directions.
 
-
-def _source_text() -> str:
-    out = []
-    for path in (*(ROOT / "src").rglob("*.py"), *(ROOT / "eval").rglob("*.py")):
-        out.append(path.read_text(encoding="utf-8"))
-    return "\n".join(out)
-
-
-@pytest.mark.parametrize("label", sorted(ABSENT))
-def test_the_absent_properties_really_are_absent(label):
-    """If either is ever implemented, this fails and the docs must be updated
-    in the same change. Silently gaining the code without the claim - or
-    vice versa - is the dangerous direction."""
-    assert not ABSENT[label].search(_source_text()), (
-        f"{label} appears in the source; either finish it and document it, or "
-        f"remove it and update this test"
-    )
-
-
-def test_the_readme_states_what_is_not_built():
-    """A reader who assumed replay protection or reference versioning existed
-    would be misled about what this prototype guarantees. The README has to keep
-    saying they are absent, in the same change that keeps them absent."""
+    Replay protection and reference version lineage used to be listed here as
+    absent. They are built now, so leaving them in the list would understate
+    the system; dropping the list altogether would overstate it. Both
+    directions are checked.
+    """
     low = (ROOT / "README.md").read_text(encoding="utf-8").lower()
     marker = next(
         (m for m in ("not built, and not claimed", "not built", "not implemented")
@@ -150,9 +117,27 @@ def test_the_readme_states_what_is_not_built():
         None,
     )
     assert marker, "README must keep an explicit list of what is not built"
-    tail = low[low.index(marker): low.index(marker) + 1600]
-    assert "replay" in tail, "replay protection must be listed as not built"
-    assert "version" in tail, "reference version lineage must be listed as not built"
+    tail = low[low.index(marker): low.index(marker) + 2500]
+
+    # built - must NOT appear in the absent list any more
+    for term in ("replay", "version lineage", "stale"):
+        assert term not in tail, (
+            f"{term!r} is implemented; the README must not list it as absent")
+
+    # still absent - must stay in the list
+    for term in ("ocr", "risk score", "automatic reference update", "signature"):
+        assert term in tail, f"{term!r} is still absent and must keep being said"
+
+
+def test_the_readme_does_not_claim_a_feature_the_docs_do_not_have():
+    """Tripwire the other way: no doc may describe a control the code lacks."""
+    for name in ("README.md", "docs/DEVPOST.md"):
+        text = (ROOT / name).read_text(encoding="utf-8").lower()
+        for phrase in ("14 of 14", "all fourteen", "fourteen invariants"):
+            if phrase in text:
+                break
+        else:
+            raise AssertionError(f"{name} must state the invariant count")
 
 
 # ---------------------------------------------------------------------------

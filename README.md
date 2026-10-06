@@ -104,6 +104,8 @@ are below and all are reproducible with one command.
 
 Every invariant below is computed without looking at what the model said.
 
+**What the gate checks in the email**
+
 - **I1a — Unknown account floor.** If a number in the email looks like a bank
   account and it is not the account on file and not a pre-registered alternate,
   a human looks at it.
@@ -122,6 +124,53 @@ Every invariant below is computed without looking at what the model said.
 - **I4 — Destination out of band.** If the message says the account is in an
   image, a PDF or a portal, the destination cannot be read and is held. See
   below.
+
+**What the gate checks about the record it is comparing against**
+
+The gate is only as good as the record it checks against, so the record is an
+input to the decision, not a given.
+
+- **R1 — Reference version lineage.** A verification made against v1 of a record
+  is refused against v2. The record moved on, so the old verification no longer
+  describes it, and inheriting it would release a change on the strength of a
+  check that was never performed against the new destination.
+- **R2 — A degraded reference never clears.** A record last confirmed longer ago
+  than its freshness window is `STALE` and floors at REVIEW. A record with no
+  payment destination on file at all is `MISSING`, and a payment-destination
+  change against a `MISSING` record is HOLD. Neither state can produce CLEAR.
+  Freshness is read from an injected clock, so it is a deterministic input
+  rather than a hidden dependency on the wall clock.
+- **R3 — Single-use verification events.** A human attestation is bound to a
+  request id, a digest of the destination, and the reference version it was made
+  against. It is refused if presented a second time, or against any other
+  request, destination, record version or vendor. A failed presentation burns
+  the event, so it cannot be retried with a better guess.
+
+**All fourteen invariants, and the tests that hold them**
+
+The count is written down rather than implied, because a number like "eleven of
+fourteen" is exactly the sort of thing that quietly goes stale.
+
+| # | Invariant | Enforced by |
+| --- | --- | --- |
+| 1 | No supported non-reference destination can CLEAR | `test_a_destination_we_cannot_read_is_never_cleared` |
+| 2 | The AI cannot directly set the final decision | `test_the_model_output_schema_cannot_express_a_verdict`, `test_only_policy_produces_a_decision` |
+| 3 | Every supported destination token is independently scanned | `test_destination_tokens_inside_quoted_text_are_still_scanned`, `test_destination_code_floor_does_not_ask_the_model` |
+| 4 | Quoted and forwarded destination tokens are not ignored | `test_destination_tokens_inside_quoted_text_are_still_scanned` |
+| 5 | Unsupported evidence cannot become trusted | `test_unsupported_destination_evidence_cannot_become_trusted`, `test_fabricated_evidence_is_rejected` |
+| 6 | A forged verbatim quote cannot justify a no-change verdict | `test_a_forged_verbatim_quote_cannot_justify_no_change` |
+| 7 | A HOLD trigger can never produce CLEAR in the same run | `test_a_hold_trigger_can_never_produce_a_clear` |
+| 8 | An old reference version cannot satisfy a newer reference | `test_a_v1_attestation_is_refused_against_a_v2_record`, `test_the_same_event_cannot_be_used_against_another_destination` |
+| 9 | A verification event cannot be presented twice | `test_the_same_event_cannot_be_used_twice`, `test_a_replayed_attestation_is_rejected_end_to_end_without_moving_the_decision` |
+| 10 | A masked or partial destination never matches | `test_a_masked_destination_never_matches_the_reference` |
+| 11 | A missing reference escalates instead of being guessed | `test_a_missing_reference_escalates_instead_of_crashing`, `test_a_missing_reference_holds_a_payment_destination_change` |
+| 12 | A degraded record never results in CLEAR | `test_a_stale_reference_never_clears`, `test_no_case_ever_clears_on_a_degraded_reference` |
+| 13 | An unreadable attachment cannot silently create a CLEAR | `test_a_destination_we_cannot_read_is_never_cleared` |
+| 14 | Model failure cannot produce CLEAR | `test_a_failing_model_never_clears`, `test_no_key_means_the_pipeline_holds_and_never_clears` |
+
+Invariants 8, 9 and 12 are the three that were, until this change, listed as
+not built. They are implemented now; `tests/test_verification_and_lineage.py`
+is their regression file, and each was sabotage-verified.
 
 ### What the gate does not do
 
@@ -300,24 +349,29 @@ Stated separately from the limits above, because these are absences rather than
 weaknesses, and a reader who assumed otherwise would be misled about what this
 prototype guarantees:
 
-- **No replay protection.** There is no attestation store, so a verification
-  event cannot be bound to a specific request and cannot be rejected as a
-  replay. The gate decides *that* a human must attest; it does not record that
-  they did, and nothing stops the same attestation being presented twice.
-- **No reference version lineage.** The vendor record has no version history.
-  There is a current value and a set of pre-registered alternates, and that is
-  the whole reference model. An older version of a record cannot be detected as
-  older, because older versions are not retained. A record with a field missing
-  is treated conservatively — a blank never matches a requested value, and a
-  missing account on file makes every account token unrecognised rather than
-  collapsing the check — but that is escalation, not versioning.
 - **No OCR, no attachment parsing.** Covered above, restated here so the list is
   complete in one place.
 - **No risk score.** Nothing here produces a number that a human is expected to
   trade off against. See `tests/test_scope.py`.
+- **No cryptographic signatures, and no PKI.** A verification event is a
+  *binding*, not a proof of identity: it ties an attestation to one request, one
+  destination and one record version, and it refuses to be used twice. It does
+  not prove *who* performed the check. There is no key material anywhere in this
+  project and no identity is asserted.
+- **No automatic reference updates.** Nothing in ThreadGate ever writes to the
+  vendor record. Updating a record is a human operation performed out of band
+  after the callback; the gate reads the version and refuses to carry a
+  verification across it. A prototype that could rewrite its own reference
+  would not be a reference.
+- **The attestation store is per-process.** Consumed event ids live in memory
+  and are not written to disk by the product path, so a restart begins with an
+  empty store. `AttestationStore.dump()` and `.restore()` exist so a deployment
+  that needs durability can persist it; the demo does not.
 
-`tests/test_reference_and_attestation.py` fails if any of these appears in the
-source without this section being updated in the same change.
+`tests/test_reference_and_attestation.py` fails if this list stops saying
+something that is still true, and it also fails if it keeps disclaiming
+something that has since been built. The list has to track reality in both
+directions, which is the only way a "not built" list stays honest.
 
 ## Run it
 
@@ -346,15 +400,18 @@ never written to the repo, logs, or the UI. See `docs/DEPLOY.md`.
 
 ```
 src/threadgate/
-  normalize.py   text normalisation with offset preservation
-  tokens.py      deterministic token finder (account/IFSC/IBAN/amount/phone)
-  extract.py     the model call + the two adversarial harnesses
-  validate.py    the closed-world evidence validator
-  compare.py     field-level diff against the vendor record
-  invariants.py  I1a/I1b/I2/I2b/I3/I4 - never consult the model
-  policy.py      the monotone decision rule
-  baseline.py    rules-only baseline, for the measured comparison
-  pipeline.py    orchestration
+  normalize.py    text normalisation with offset preservation
+  tokens.py       deterministic token finder (account/IFSC/IBAN/amount/phone)
+  extract.py      the model call + the two adversarial harnesses
+  validate.py     the closed-world evidence validator
+  compare.py      field-level diff against the vendor record
+  invariants.py   I1a/I1b/I2/I2b/I3/I4 - never consult the model
+  clock.py        injected time source, so freshness is a deterministic input
+  reference.py    reference version and CURRENT / STALE / MISSING
+  attestation.py  single-use verification events and their bindings
+  policy.py       the monotone decision rule
+  baseline.py     rules-only baseline, for the measured comparison
+  pipeline.py     orchestration
 data/cases/      frozen_v1 (benchmark), additions (stress), categories.json
 data/records/    synthetic vendor master
 eval/            evaluation harness and reports

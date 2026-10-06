@@ -27,14 +27,15 @@ from .invariants import (
     unverifiable_finding,
 )
 
-# What this gate is for. Anything not in DESTINATION_FIELDS is reported to the
-# analyst but is not what the closed-world rule protects, and none of it feeds a
-# numeric risk score.
-DESTINATION_FIELDS = {"account_number", "iban", "swift", "ifsc", "beneficiary_name"}
-INSTRUCTION_FIELDS = {"currency", "amount", "payment_terms"}
-CONTACT_FIELDS = {"remittance_email", "contact_person", "contact_phone"}
+from .compare import DESTINATION_FIELDS  # canonical set lives with the comparator
 from .normalize import NormalizedText
 from .records import Vendor
+from .reference import (
+    reference_age_days,
+    reference_finding,
+    reference_state,
+    reference_version,
+)
 from .schema import Decision, FieldDiff, Finding
 from .tokens import Token
 from .validate import ValidationResult
@@ -91,6 +92,7 @@ def decide(
     nt: NormalizedText,
     email: dict | None = None,
     ablation=None,
+    clock=None,
 ) -> Decision:
     """Apply the decision rule.
 
@@ -98,6 +100,10 @@ def decide(
     closed-world floor is skipped and the gate has to rely on the model's
     reading alone - which is the comparison the evaluation needs and the reason
     the floor exists.
+
+    `clock` is the injected time source used to judge whether the record on file
+    is still current. It defaults to the system clock; tests and the evaluation
+    pin it.
     """
     findings: list[Finding] = list(authentication_findings(email or {}))
 
@@ -213,6 +219,37 @@ def decide(
         decision = "CLEAR"
         reasons.append("no_change_evidenced" if no_change_accepted else "nothing_to_gate")
 
+    # --- the reference itself must be usable ------------------------------
+    # Everything above asks whether the request matches the record. This asks
+    # whether the record is fit to be checked against. It is the last step and it
+    # can only raise the decision, never lower it.
+    #
+    #   CURRENT -> normal evaluation
+    #   STALE   -> minimum REVIEW
+    #   MISSING -> HOLD when a payment-destination change is on the table,
+    #              otherwise minimum REVIEW
+    #
+    # A non-current reference therefore never yields CLEAR, in either state.
+    state = reference_state(vendor, clock)
+    if state != "CURRENT":
+        destination_change = (
+            any(d.changed and d.field in DESTINATION_FIELDS for d in diffs)
+            or bool(floor)
+            or bool(out_of_band)
+        )
+        forces_hold = state == "MISSING" and destination_change
+        finding = reference_finding(
+            state, vendor, reference_age_days(vendor, clock), forces_hold
+        )
+        if finding is not None:
+            findings.append(finding)
+        if forces_hold:
+            decision = "HOLD"
+            reasons.append("reference_missing_destination_change")
+        elif decision == "CLEAR":
+            decision = "REVIEW"
+            reasons.append(f"reference_{state.lower()}_record")
+
     return Decision(
         decision=decision,
         reasons=list(dict.fromkeys(reasons)),
@@ -225,4 +262,6 @@ def decide(
         checklist=_checklist(vendor, diffs, floor, unverifiable, bool(out_of_band))
         if decision == "HOLD"
         else [],
+        reference_version=reference_version(vendor),
+        reference_state=state,
     )

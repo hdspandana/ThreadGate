@@ -96,17 +96,25 @@ the per-category breakdown.
 > This is a gate, not a score. There's no risk score in it, and none is coming.
 > Code is in the repo; everything here is reproducible with one command."
 
-### 2:56–3:05 — What the human does next
+### 2:56–3:10 — What the human does next, and why it can't be carried elsewhere
 
-**On screen:** back to TG-001's **Before anything executes** checklist.
+**On screen:** TG-001's **Before anything executes** checklist, then the
+**Human verification** panel showing `PENDING`, and the **The record this was
+checked against** panel.
 
 > "And then a person. The gate doesn't update anything — it hands over the exact
 > diff and a callback script: call the number already on file, not any number in
-> the email; read the account back digit by digit; two-person approval. Once
-> that's verified out of band, the record is updated and the next run gates
-> against the new one. The prototype stops at the decision; it doesn't store the
-> attestation."
-> That last sentence is a limit, and saying it is worth more than hiding it.
+> the email; read the account back digit by digit; two-person approval.
+> When they attest, that verification is bound to this request, this
+> destination, and this version of the record. Present it twice and it's
+> refused. Carry it to another request and it's refused. Move the record to v2
+> and the v1 verification stops counting — the record moved on, so the old check
+> no longer describes it. And if the record is stale or empty, nothing clears in
+> the first place.
+> Two limits left: there's no signature, so this proves nothing about *who*
+> verified, and the store is per-process, so it doesn't survive a restart."
+> Those last two sentences are limits, and saying them is worth more than
+> hiding them.
 
 ---
 
@@ -186,6 +194,14 @@ Record at 1500x1050, browser at default zoom.
 - Do not describe the 40-case combined set as a benchmark.
 - Do not claim OCR, attachment parsing, URL scanning or threat intelligence.
   They are not there, and the diagram says so.
+- Do not call a verification event a signature, a certificate, or proof of
+  identity. It is a *binding*: single-use, tied to one request, one destination
+  and one record version. There is no key material anywhere in the project.
+- Do not say the attestation store is durable. Consumed event ids live in
+  memory; a restart starts empty. `dump()` / `restore()` exist, the demo does
+  not use them.
+- Do not say ThreadGate updates the vendor record. It never writes to it —
+  updating a record is a human operation done out of band after the callback.
 
 ---
 

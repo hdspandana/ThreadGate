@@ -12,12 +12,22 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
+from .attestation import (
+    AttestationState,
+    AttestationStore,
+    VerificationContext,
+    VerificationEvent,
+    destination_digest,
+    request_id_for,
+)
+from .clock import SystemClock
 from .compare import diff_claims
 from .extract import get_extractor
 from .normalize import NormalizedText, normalize_text
 from .policy import decide
 from .records import Vendor
-from .schema import Decision, Extraction
+from .reference import reference_version
+from .schema import Decision, Extraction, Finding
 from .tokens import Token, find_tokens
 from .validate import ValidatedClaim, ValidationResult, check_old_values, validate_extraction
 
@@ -51,6 +61,9 @@ class PipelineResult:
     expected: str | None = None
     notes: list[str] = field(default_factory=list)
     error: str | None = None
+    # What this request is bound to, and where the human-verification step stands.
+    verification: VerificationContext | None = None
+    attestation: AttestationState | None = None
 
     @property
     def correct(self) -> bool | None:
@@ -103,7 +116,21 @@ def run_case(
     extractor_mode: str | None = None,
     extractor_fn=None,
     ablation: Ablation | None = None,
+    clock=None,
+    store: AttestationStore | None = None,
+    presented_event: VerificationEvent | None = None,
 ) -> PipelineResult:
+    """Run one case.
+
+    `clock` is the injected time source for reference freshness; it defaults to
+    the system clock and is pinned by tests and by the evaluation.
+
+    `store` and `presented_event` drive the human-verification step. When an
+    event is presented against a decision that requires attestation, the store
+    decides whether it is accepted and burns it either way. A rejected
+    attestation is recorded and never changes the decision - it can neither
+    release a hold nor manufacture a clear.
+    """
     started = time.perf_counter()
     vendor = vendors[case["vendor_id"]]
     raw = email_to_text(case["email"])
@@ -132,13 +159,56 @@ def run_case(
     notes.extend(f"validator:{v}" for v in validation.violations)
 
     diffs = diff_claims(validation.claims, vendor)
+    clock = clock or SystemClock()
     decision = decide(vendor, extraction.intent, validation, diffs, tokens, nt,
-                      case["email"], ablation=ablation)
+                      case["email"], ablation=ablation, clock=clock)
 
+    # Fail closed before anything else reads the decision.
     if error:
         decision.decision = "HOLD"
         decision.reasons.append("extractor_failed_fail_closed")
         decision.attestation_required = True
+        decision.attestation_status = "PENDING"
+
+    # --- what an attestation would have to be bound to --------------------
+    # Derived by code from the diff and from the record on file. The model's
+    # description of the destination is deliberately not an input: a binding the
+    # model can influence is not a binding.
+    context = VerificationContext(
+        vendor_id=vendor.vendor_id,
+        request_id=request_id_for(case, nt.text),
+        destination_digest=destination_digest(diffs, vendor),
+        reference_version=reference_version(vendor),
+    )
+    attestation = AttestationState(context=context)
+
+    if presented_event is not None:
+        outcome = (store if store is not None else AttestationStore()).consume(
+            presented_event, context, required=decision.attestation_required
+        )
+        attestation.status = "SATISFIED" if outcome.accepted else "REJECTED"
+        attestation.code = outcome.code
+        attestation.message = outcome.message
+        attestation.event_id = presented_event.event_id
+        decision.attestation_status = attestation.status
+        decision.attestation_code = outcome.code
+        if not outcome.accepted:
+            # Recorded, never acted on. A rejected attestation cannot release a
+            # hold, and it also cannot be used to argue the gate stricter than
+            # the evidence supports - so it is a finding, not a hold trigger.
+            decision.findings.append(
+                Finding(
+                    code=outcome.code,
+                    severity="info",
+                    message=outcome.message,
+                    independent_of_model=True,
+                )
+            )
+            decision.reasons.append("attestation_rejected")
+    else:
+        attestation.status = "PENDING" if decision.attestation_required else "NOT_REQUIRED"
+        decision.attestation_status = attestation.status
+        decision.attestation_code = ""
 
     return PipelineResult(
         case_id=case["id"],
@@ -153,4 +223,6 @@ def run_case(
         expected=case.get("expected_decision"),
         notes=notes,
         error=error,
+        verification=context,
+        attestation=attestation,
     )

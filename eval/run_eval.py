@@ -43,6 +43,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from threadgate.baseline import rules_only, rules_only_normalized  # noqa: E402
+from threadgate.clock import fixed  # noqa: E402
 from threadgate.extract import ai_only_decide  # noqa: E402
 from threadgate.normalize import normalize_text  # noqa: E402
 from threadgate.pipeline import Ablation, PipelineResult, email_to_text, run_case  # noqa: E402
@@ -106,11 +107,19 @@ DISCLAIMER = (
 )
 
 
+# Reference freshness is a decision input, so the evaluation pins the date
+# instead of reading the wall clock. Without this, the frozen results would
+# silently change on the day the vendor records pass their confirmation window,
+# and a number that moves on its own is not a reproducible result.
+EVAL_AS_OF = "2026-10-06"
+
+
 def gemini_available() -> bool:
     return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
 
 
-def run_system(system: str, cases: list[dict], vendors: dict) -> list[PipelineResult]:
+def run_system(system: str, cases: list[dict], vendors: dict,
+               clock=None) -> list[PipelineResult]:
     if system in ("rules_raw", "rules_norm"):
         fn = rules_only if system == "rules_raw" else rules_only_normalized
         return [
@@ -169,7 +178,8 @@ def run_system(system: str, cases: list[dict], vendors: dict) -> list[PipelineRe
             disable_destination_scan=(system == "hybrid_no_scan"),
             disable_evidence_validation=(system == "hybrid_no_validation"),
         )
-        return [run_case(c, vendors, extractor_mode="gemini", ablation=ablation) for c in cases]
+        return [run_case(c, vendors, extractor_mode="gemini", ablation=ablation,
+                         clock=clock) for c in cases]
 
     mode = {
         "gemini": "gemini",
@@ -177,7 +187,7 @@ def run_system(system: str, cases: list[dict], vendors: dict) -> list[PipelineRe
         "compromised": "compromised",
         "compromised_q": "compromised_quote",
     }[system]
-    return [run_case(c, vendors, extractor_mode=mode) for c in cases]
+    return [run_case(c, vendors, extractor_mode=mode, clock=clock) for c in cases]
 
 
 def metrics(results: list[PipelineResult]) -> dict:
@@ -244,7 +254,10 @@ def main() -> int:
     ap.add_argument("--systems", nargs="+", default=["rules_raw", "rules_norm", "offline", "compromised", "compromised_q"])
     ap.add_argument("--out", default=str(ROOT / "results"))
     ap.add_argument("--require-gemini", action="store_true", help="exit 2 if the live model cannot be evaluated")
+    ap.add_argument("--as-of", default=EVAL_AS_OF,
+                    help="date used to judge reference freshness (default: %(default)s)")
     args = ap.parse_args()
+    clock = fixed(args.as_of)
 
     systems = [s for s in args.systems if s in ALL_SYSTEMS]
     if args.require_gemini:
@@ -271,6 +284,9 @@ def main() -> int:
 
     report: dict = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        # Recorded because freshness is a decision input: a reader reproducing
+        # this run has to know which date the records were judged against.
+        "as_of": args.as_of,
         "systems_run": systems,
         "systems_skipped": skipped,
         "gemini_evaluated": MODEL_SYSTEM in systems,
@@ -286,7 +302,7 @@ def main() -> int:
         per_case: dict[str, dict] = {}
 
         for system in systems:
-            results = run_system(system, cases, vendors)
+            results = run_system(system, cases, vendors, clock)
             main_table[system] = metrics(results)
             failed = [r.case_id for r in results if r.error]
             if failed:

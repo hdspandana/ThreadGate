@@ -97,6 +97,18 @@ class Decision(BaseModel):
     reasons: list[str] = Field(default_factory=list)
     diffs: list[FieldDiff] = Field(default_factory=list)
     findings: list[Finding] = Field(default_factory=list)
+    # True whenever the decision is not CLEAR. It describes the *requirement*,
+    # not whether it has been met - a satisfied attestation does not set this to
+    # False, because the requirement still exists and rule 19 pins it to
+    # `decision != "CLEAR"`. `attestation_status` carries the state.
     attestation_required: bool = False
     checklist: list[str] = Field(default_factory=list)
+    # Which version of the record this decision was made against, and whether
+    # that record was current. Both are security inputs, not annotations: an
+    # attestation made against another version is refused.
+    reference_version: str = "unversioned"
+    reference_state: str = "CURRENT"
+    # NOT_REQUIRED | PENDING | SATISFIED | REJECTED
+    attestation_status: str = "NOT_REQUIRED"
+    attestation_code: str = ""
     model_config = {"arbitrary_types_allowed": True}

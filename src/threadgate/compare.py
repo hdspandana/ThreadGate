@@ -13,6 +13,14 @@ from .records import Vendor
 from .schema import FieldDiff
 from .validate import ValidatedClaim
 
+# What this gate is for. Anything not in DESTINATION_FIELDS is reported to the
+# analyst but is not what the closed-world rule protects, and none of it feeds a
+# numeric risk score. Defined here rather than in policy so that the attestation
+# binding and the policy both read the same set without importing each other.
+DESTINATION_FIELDS = {"account_number", "iban", "swift", "ifsc", "beneficiary_name"}
+INSTRUCTION_FIELDS = {"currency", "amount", "payment_terms"}
+CONTACT_FIELDS = {"remittance_email", "contact_person", "contact_phone"}
+
 FIELD_RISK: dict[str, str] = {
     "account_number": "high",
     "ifsc": "high",

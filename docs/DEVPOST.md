@@ -123,6 +123,27 @@ email → normalise → token finder → [Gemini: what change does this ask for?
    vendor age and similar signals are absent by design, because a score can be
    argued with and a destination check cannot.
 
+**The record is an input, not a given.** A gate is only as good as the master
+record it compares against, so three more invariants apply to that record:
+
+- **Reference version lineage.** A verification made against v1 of a record is
+  refused against v2. The record moved on, so the old verification no longer
+  describes it, and inheriting it would release a change on the strength of a
+  check that was never performed against the new destination.
+- **A degraded record never clears.** A record past its confirmation window is
+  `STALE` and floors at REVIEW. A record with no payment destination on file is
+  `MISSING`, and a payment-destination change against it is HOLD. Freshness is
+  read from an injected clock, so it is a deterministic input rather than a
+  hidden dependency on the wall clock.
+- **Single-use verification events.** A human attestation is bound to a request
+  id, a digest of the destination, and the record version it was made against.
+  It is refused if presented a second time, or against any other request,
+  destination, record version or vendor. A failed presentation burns the event,
+  so it cannot be retried with a better guess.
+
+All fourteen invariants are enumerated, each with the test that holds it, in
+the README's security-model section. Nothing is claimed that is not tested.
+
 **What makes it more than a wrapper** is that the model's output is a hypothesis
 about the email rather than a decision about the request. Three things stand
 between it and the verdict: the validator, a policy the model cannot override,
@@ -211,23 +232,30 @@ README:
 
 ### Not built, and not claimed
 
-Say this if a judge asks what happens after the decision, because the answer is
-"the prototype stops there":
+Say this if a judge asks what the prototype does not do, because three of these
+are the questions a payments person will ask first:
 
-- **No replay protection.** There is no attestation store. The gate decides
-  *that* a human must attest; it does not record that they did, and it cannot
-  reject the same attestation presented twice.
-- **No reference version lineage.** The vendor record has no version history —
-  just a current value and a set of pre-registered alternates. An old version
-  cannot be detected as old. A record with a field missing is handled
-  conservatively (a blank never matches a requested value, and a missing account
-  on file makes every account token unrecognised), but that is escalation, not
-  versioning.
-- **No OCR, no attachment parsing, no risk score, no mail-flow integration.**
+- **No OCR, no attachment parsing, no mail-flow integration.** An image-hidden
+  destination is held, never read.
+- **No risk score.** Invoice value, vendor age and payment history are absent by
+  design. A score can be argued with; a destination check cannot.
+- **No cryptographic signatures, and no PKI.** A verification event is a
+  *binding*, not a proof of identity: it ties an attestation to one request, one
+  destination and one record version, and refuses to let it be used twice. It
+  does not prove *who* performed the check. There is no key material anywhere in
+  the project.
+- **No automatic reference updates.** Nothing in ThreadGate writes to the vendor
+  record. Updating a record is a human operation performed out of band after the
+  callback; the gate reads the version and refuses to carry a verification
+  across it.
+- **The attestation store is per-process.** Consumed event ids live in memory
+  and are not written to disk by the product path, so a restart begins with an
+  empty store. `dump()` and `restore()` exist for a deployment that needs
+  durability; the demo does not.
 
-Both absences are asserted as absences by
-`tests/test_reference_and_attestation.py`, which fails if the code ever gains
-them without this document being updated in the same change.
+`tests/test_reference_and_attestation.py` fails if this list stops saying
+something that is still true, *or* keeps disclaiming something that has since
+been built. The list tracks reality in both directions.
 
 ### Screenshot provenance
 

@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from threadgate.baseline import rules_only  # noqa: E402
 from threadgate.records import load_cases, load_vendors  # noqa: E402
+from threadgate.clock import SystemClock  # noqa: E402
 from threadgate.pipeline import run_case  # noqa: E402
 from threadgate.tokens import unique_accounts  # noqa: E402
 
@@ -162,6 +163,34 @@ def diff_table(result) -> str:
     return "".join(rows)
 
 
+# Reference and attestation states. No green anywhere: a muted blue is the
+# "nothing to see" colour, amber and red are the two that need a person.
+STATE_COLOUR = {"CURRENT": "#37507a", "STALE": "#8a5a00", "MISSING": "#c1121f"}
+STATE_NOTE = {
+    "CURRENT": "The record on file was confirmed inside its freshness window, so "
+               "it is treated as usable evidence of the destination.",
+    "STALE": "The record has not been reconfirmed recently enough to trust. "
+             "Nothing here can clear on the strength of it.",
+    "MISSING": "There is no payment destination on file at all, so there is "
+               "nothing to verify the request against.",
+}
+ATTEST_COLOUR = {
+    "NOT_REQUIRED": "#37507a", "PENDING": "#8a5a00",
+    "SATISFIED": "#37507a", "REJECTED": "#c1121f",
+}
+ATTEST_NOTE = {
+    "NOT_REQUIRED": "No change was identified, so there is nothing to verify.",
+    "PENDING": "A human must verify this out of band and attest before it executes. "
+               "The attestation is single-use and bound to this request, this "
+               "destination and this record version.",
+    "SATISFIED": "A verification event bound to this exact request, destination and "
+                 "record version has been accepted once.",
+    "REJECTED": "An attestation was presented and refused - wrong request, wrong "
+                "destination, wrong record version, or already used. The decision "
+                "is unchanged.",
+}
+
+
 def render(result, baseline_decision: str) -> None:
     colour, label = BADGE[result.decision.decision]
     st.markdown(f"<span class='badge' style='background:{colour}'>{label}</span>", unsafe_allow_html=True)
@@ -193,6 +222,31 @@ def render(result, baseline_decision: str) -> None:
         st.subheader("Why")
         for r in result.decision.reasons:
             st.markdown(f"- `{r}`")
+
+        st.markdown("#### The record this was checked against")
+        st.markdown(
+            f"<span class='badge' style='background:{STATE_COLOUR.get(result.decision.reference_state, '#4a4a4a')}'>"
+            f"{result.decision.reference_state}</span> "
+            f"<span class='small'>reference <code>{result.decision.reference_version}</code></span>",
+            unsafe_allow_html=True,
+        )
+        st.caption(STATE_NOTE.get(result.decision.reference_state, ""))
+
+        st.markdown("#### Human verification")
+        status = result.decision.attestation_status
+        st.markdown(
+            f"<span class='badge' style='background:{ATTEST_COLOUR.get(status, '#4a4a4a')}'>"
+            f"{status}</span>",
+            unsafe_allow_html=True,
+        )
+        st.caption(ATTEST_NOTE.get(status, ""))
+        if result.verification is not None:
+            st.caption(
+                "An attestation would have to be bound to this request, this "
+                "destination digest and this reference version: "
+                f"`{result.verification.destination_digest[:16]}…`"
+            )
+
         st.markdown("#### Diff against the record")
         st.markdown(diff_table(result), unsafe_allow_html=True)
 
@@ -316,7 +370,10 @@ if case is None:
     st.stop()
 
 try:
-    result = run_case(case, VENDORS, extractor_mode=mode)
+    # The wall clock, because a deployed demo should judge the record
+    # against real time. The evaluation pins the date instead so its
+    # numbers are reproducible.
+    result = run_case(case, VENDORS, extractor_mode=mode, clock=SystemClock())
 except Exception as exc:  # noqa: BLE001
     st.error(f"Pipeline failed: {exc}")
     st.stop()

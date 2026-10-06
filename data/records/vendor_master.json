@@ -1,9 +1,12 @@
 {
-  "schema": "threadgate.vendor_record/v1",
+  "schema": "threadgate.vendor_record/v2",
   "note": "Synthetic data. Fabricated for this demo; no real vendor, bank or account is represented.",
+  "reference_note": "`reference_version` identifies the version of each record; a verification made against one version is refused against another. `reference_updated_at` is when the record was last confirmed out of band; a record older than `reference_freshness_days` (default 90) is STALE. Neither field is ever written by ThreadGate - updating a record is a human operation performed after the callback, and automatic updates are deliberately not built.",
   "vendors": {
     "V-1001": {
       "vendor_id": "V-1001",
+      "reference_version": "v1",
+      "reference_updated_at": "2026-09-15",
       "legal_name": "Northwind Logistics Pvt Ltd",
       "display_name": "Northwind Logistics",
       "bank": {
@@ -40,6 +43,8 @@
     },
     "V-1002": {
       "vendor_id": "V-1002",
+      "reference_version": "v1",
+      "reference_updated_at": "2026-09-15",
       "legal_name": "Kaveri Freight Solutions LLP",
       "display_name": "Kaveri Freight",
       "bank": {

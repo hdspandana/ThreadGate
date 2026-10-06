@@ -28,6 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from threadgate.clock import fixed  # noqa: E402
 from threadgate.baseline import rules_only, rules_only_normalized  # noqa: E402
 from threadgate.extract import compromised_extract, compromised_quote_extract, offline_extract  # noqa: E402
 from threadgate.invariants import out_of_band_destination  # noqa: E402
@@ -37,6 +38,14 @@ from threadgate.schema import Claim, Extraction  # noqa: E402
 from threadgate.tokens import find_tokens, unique_accounts  # noqa: E402
 from threadgate.validate import validate_extraction  # noqa: E402
 from threadgate.normalize import normalize_text  # noqa: E402
+
+# The gate judges a frozen corpus, so it pins the date rather than reading the
+# wall clock. Otherwise it would start failing on its own the day the vendor
+# records pass their confirmation window - a steered model would begin
+# producing REVIEW where it used to produce CLEAR - and a go/no-go check that
+# fails because of the calendar is worse than no check at all.
+GATE_AS_OF = "2026-10-06"
+CLOCK = fixed(GATE_AS_OF)
 
 CHECKS: list[tuple[str, bool, str]] = []
 
@@ -141,7 +150,7 @@ def main() -> int:
     for cid in ("TG-020", "TG-034"):
         case = cases[cid]
         decisions = {
-            run_case(case, vendors, extractor_fn=fn).decision.decision
+            run_case(case, vendors, extractor_fn=fn, clock=CLOCK).decision.decision
             for fn in (offline_extract, compromised_extract, compromised_quote_extract)
         }
         check(f"{cid}: held under every extractor, including a steered model",
@@ -149,7 +158,8 @@ def main() -> int:
         check(
             f"{cid}: out-of-band invariant fires",
             any(f.code == "I4_DESTINATION_OUT_OF_BAND"
-                for f in run_case(case, vendors, extractor_fn=offline_extract).decision.findings),
+                for f in run_case(case, vendors, extractor_fn=offline_extract,
+                                  clock=CLOCK).decision.findings),
         )
     benign_fires = []
     for c in cases.values():
@@ -165,7 +175,7 @@ def main() -> int:
     for name in ("frozen_v1.json", "frozen_v2.json"):
         for c in load_cases(ROOT / "data" / "cases" / name):
             for fn in (compromised_extract, compromised_quote_extract):
-                r = run_case(c, vendors, extractor_fn=fn)
+                r = run_case(c, vendors, extractor_fn=fn, clock=CLOCK)
                 if r.unsafe:
                     unsafe.append(f"{name}:{c['id']}")
                 if r.decision.decision == "REVIEW":

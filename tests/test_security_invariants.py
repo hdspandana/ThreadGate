@@ -3,14 +3,10 @@
 Each test here corresponds to a claim made in the README. If a claim cannot be
 turned into a passing test, it does not go in the README.
 
-Two checks from the submission checklist are deliberately absent because they
-are NOT implemented, and inventing them would be a false security claim:
-
-  - replayed verification is rejected          (no attestation store exists)
-  - reference version / stale / missing         (single-version reference only;
-    reference lineage was not built)
-
-Both are listed in the README's limitations instead.
+All fourteen invariants are now enforced here or in
+`test_verification_and_lineage.py`. Nothing in this file asserts that a
+property is absent; the three that once were (replay protection, reference
+version lineage, stale-reference escalation) are implemented and tested.
 """
 
 from __future__ import annotations
@@ -127,24 +123,44 @@ def test_a_forged_verbatim_quote_cannot_justify_no_change(case_by_id_all, vendor
 
 # --- what is and is not implemented ---------------------------------------
 
-def test_invariants_that_are_not_implemented_are_not_claimed(tmp_path):
-    """Guard against the README claiming a property the code does not have.
+def test_the_three_formerly_absent_invariants_are_really_implemented():
+    """Replay protection, reference version lineage, stale-reference escalation.
 
-    If replay protection or reference lineage is ever built, this test will
-    start failing and the README limitation must be updated in the same commit.
+    These were once documented as not built. This test is the tripwire against
+    ever regressing to that state: it checks the modules exist and actually
+    expose the behaviour, so deleting a module or hollowing out a function
+    fails here rather than only in the dedicated file.
     """
-    import inspect
+    from threadgate import attestation as att
+    from threadgate import clock as clk
+    from threadgate import reference as ref
 
-    import threadgate.invariants as inv
-    import threadgate.policy as pol
+    # replay protection: a store that accepts once and refuses the second time
+    ctx = att.VerificationContext("V-1", "R-1", "d" * 64, "v1")
+    event = att.VerificationEvent("EV-1", "V-1", "R-1", "d" * 64, "v1")
+    store = att.AttestationStore()
+    assert store.consume(event, ctx, required=True).accepted
+    assert store.consume(event, ctx, required=True).code == att.REPLAY
 
-    src = inspect.getsource(inv) + inspect.getsource(pol)
-    not_implemented = ["replay", "reference_version", "stale_reference", "lineage"]
-    present = [t for t in not_implemented if t in src.lower()]
-    assert present == [], (
-        "these appear in the source but are documented as not implemented - "
-        "update the README limitations in the same commit"
-    )
+    # reference version lineage: v1 against a v2 record is refused
+    v2 = att.VerificationContext("V-1", "R-1", "d" * 64, "v2")
+    fresh = att.AttestationStore()
+    assert fresh.consume(event, v2, required=True).code == att.REFERENCE_VERSION_MISMATCH
+
+    # stale-reference escalation: the three states exist and the clock drives them
+    assert set(ref.ReferenceState.__args__) == {"CURRENT", "STALE", "MISSING"}
+    vendor = _vendors()["V-1001"]
+    assert ref.reference_state(vendor, clk.fixed("2026-10-06")) == "CURRENT"
+    assert ref.reference_state(vendor, clk.fixed("2027-06-01")) == "STALE"
+
+
+def _vendors():
+    from pathlib import Path
+
+    from threadgate.records import load_vendors
+
+    return load_vendors(Path(__file__).resolve().parents[1]
+                        / "data" / "records" / "vendor_master.json")
 
 
 def test_only_policy_produces_a_decision():
