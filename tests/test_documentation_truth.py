@@ -129,14 +129,28 @@ def test_the_hackathon_window_matches_the_official_deadline():
 
 
 def test_cross_message_is_described_as_quoted_content_not_correlation():
-    readme = doc("README.md")
-    idx = readme.find("cross_message** (deciding which end of a thread is")
-    assert idx > 0
-    tail = readme[idx: idx + 900]
-    assert "single message" in tail
-    # Matched without the markdown emphasis, which sits inside the sentence.
+    """The implementation has no thread object; the docs must not imply one.
+
+    The category was originally introduced as "deciding which end of a thread
+    is live", which reads as correlation across separate messages and is not
+    what the code does. Both the description and this test were rewritten: the
+    first version pinned the misleading phrase, so correcting the documentation
+    broke the test guarding it.
+    """
+    flat = flat_doc("README.md")
+    # Anchored on the prose paragraph, not the category table: `cross_message`
+    # appears first as a table row, which says nothing about threads either way.
+    idx = flat.find("`cross_message` is named for what it is")
+    assert idx > 0, "the cross_message explanatory paragraph is missing"
+    tail = flat[idx: idx + 700]
+    # the honest, specific description
+    assert "quoted and forwarded content inside a single message" in tail
+    # and the explicit denial of the wrong reading
     assert "correlation across separate emails" in tail
-    assert re.search(r"\bnot\s+correlation", tail), tail
+    assert re.search(r"\bnot correlation", tail), tail
+    # no claim of a thread object
+    assert "which end of a thread" not in flat
+    assert "thread store" in tail
 
 
 # ---------------------------------------------------------------------------

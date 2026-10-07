@@ -339,27 +339,27 @@ Not an unbiased benchmark. Shown for completeness and for the category view.
 
 ### Where the reading is actually needed
 
-Per-category accuracy on the combined set. `u` counts unsafe outcomes.
+Per-category accuracy on the combined set. `u` counts unsafe outcomes (a hold that was released); `n` counts non-CLEAR releases (a case the gate should have stopped that came back CLEAR).
 Categories are assigned in `data/cases/categories.json`, which was written
 after both sets were frozen, so it annotates cases without relabelling them.
 This table is generated from `results/latest.json` by `python eval/run_eval.py`;
 if you change a case, re-run the evaluation before trusting it.
 
-| Category | n | rules_raw | rules_norm | offline | compromised | compromised_q |
+| Category | cases | rules_raw | rules_norm | offline | compromised | compromised_q |
 | --- | --- | --- | --- | --- | --- | --- |
-| ambiguity | 1 | 100 | 100 | 100 | 100 | 100 |
-| benign_low_risk_field | 4 | 0 | 0 | 100 | 0 | 0 |
-| benign_preregistered | 2 | 0 | 0 | 100 | 0 | 0 |
-| contradiction | 2 | 100 | 100 | 100 | 100 | 100 |
-| cross_message | 2 | 50 | 50 | 100 | 50 | 50 |
-| direct_change | 6 | 100 | 100 | 100 | 100 | 100 |
-| mention_vs_request | 6 | 17 | 17 | 100 | 50 | 50 |
-| negation | 2 | 0 | 0 | 100 | 0 | 0 |
-| obfuscation | 5 | 20 **(u4)** | 100 | 100 | 100 | 100 |
-| prompt_injection | 5 | 100 | 100 | 100 | 100 | 100 |
-| quoted_forwarded | 1 | 100 | 100 | 100 | 100 | 100 |
-| social_engineering | 2 | 100 | 100 | 100 | 100 | 100 |
-| tokenless_implicit | 2 | 100 | 100 | 100 | 100 | 100 |
+| ambiguity | 1 | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
+| benign_low_risk_field | 4 | 0 (u0 n0) | 0 (u0 n0) | 100 (u0 n0) | 0 (u0 n0) | 0 (u0 n0) |
+| benign_preregistered | 2 | 0 (u0 **n2**) | 0 (u0 **n2**) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
+| contradiction | 2 | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
+| cross_message | 2 | 50 (u0 n0) | 50 (u0 n0) | 100 (u0 n0) | 50 (u0 n0) | 50 (u0 n0) |
+| direct_change | 6 | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
+| mention_vs_request | 6 | 17 (u0 n0) | 17 (u0 n0) | 100 (u0 n0) | 50 (u0 n0) | 50 (u0 n0) |
+| negation | 2 | 0 (u0 n0) | 0 (u0 n0) | 100 (u0 n0) | 0 (u0 n0) | 0 (u0 n0) |
+| obfuscation | 5 | 20 **(u4 n4)** | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
+| prompt_injection | 5 | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
+| quoted_forwarded | 1 | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
+| social_engineering | 2 | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
+| tokenless_implicit | 2 | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) | 100 (u0 n0) |
 
 Read that table carefully, because two rows flatter the baseline:
 
@@ -495,7 +495,7 @@ directions, which is the only way a "not built" list stays honest.
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
-python -m pytest            # 569 tests, no network needed
+python -m pytest            # 586 tests, no network needed
 python scripts/secret_scan.py   # nothing credential-like in the tree or history
 python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
 python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped
