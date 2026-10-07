@@ -495,7 +495,7 @@ directions, which is the only way a "not built" list stays honest.
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
-python -m pytest            # 586 tests, no network needed
+python -m pytest            # 594 tests, no network needed
 python scripts/secret_scan.py   # nothing credential-like in the tree or history
 python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
 python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped

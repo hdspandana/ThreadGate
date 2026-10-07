@@ -80,7 +80,7 @@ on file, and if not, does a human have to look at it?**
 ### 2. Technical approach and components
 
 **Stack:** Python, Google Gemini (`gemini-2.5-flash`) for interpretation only,
-Pydantic for output contracts, Streamlit for the demo, pytest for the 586-test
+Pydantic for output contracts, Streamlit for the demo, pytest for the 594-test
 suite. No embeddings, no vector store, no OCR, no URL scanning, no threat feed.
 
 The pipeline is deliberately asymmetric. The model sits in exactly one box, and
@@ -321,7 +321,7 @@ of model behaviour, and must not be captioned as Gemini output. Re-running
    **2** if any model system was skipped, so a silently absent key cannot look
    like a completed run. Output lands in `results/`.
 2. Re-run `python scripts/kill_gate.py` and `python -m pytest`; both must be
-   green on the final commit (586 tests, 18 kill-gate checks).
+   green on the final commit (594 tests, 18 kill-gate checks).
 3. `git log --reverse` — the first commit must be dated after 2026-10-03 12:00
    EDT / 21:30 IST.
 4. Confirm no key is committed: `python scripts/secret_scan.py` must print
