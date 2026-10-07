@@ -29,6 +29,16 @@ def doc(name: str) -> str:
     return (ROOT / name).read_text(encoding="utf-8")
 
 
+def flat_doc(name: str) -> str:
+    """Prose with newlines collapsed, for checking a sentence not a layout.
+
+    Markdown wraps at 80 columns, so a phrase scheduled to appear on one line
+    regularly is not on one line. Checking the wrapped text rather than the
+    flat sentence produced a false failure the first time this was tried.
+    """
+    return " ".join(doc(name).split())
+
+
 # ---------------------------------------------------------------------------
 # every test named in the docs has to exist
 # ---------------------------------------------------------------------------
@@ -340,3 +350,55 @@ def test_the_stated_kill_gate_check_count_matches_the_gate():
         f"DEVPOST states {m.group(1)} kill-gate checks but the gate runs "
         f"{_kill_gate_check_count()}"
     )
+
+
+# ---------------------------------------------------------------------------
+# the data is synthetic, and said so
+# ---------------------------------------------------------------------------
+SYNTHETIC_CLAIM = "All financial identifiers are synthetic demo data"
+
+
+@pytest.mark.parametrize("name", ["README.md", "docs/DEVPOST.md"])
+def test_the_synthetic_data_disclosure_is_present_and_prominent(name):
+    """A reader must not be able to mistake the demo corpus for real records."""
+    assert SYNTHETIC_CLAIM in flat_doc(name), (
+        f"{name} does not state that the data is synthetic"
+    )
+
+
+def test_nothing_claims_verification_against_a_real_banking_system():
+    """The identifiers are fabricated, so no result may imply otherwise."""
+    for name in DOCS:
+        text = flat_doc(name).lower()
+        for phrase in (
+            "verified against a real bank",
+            "real banking system verification",
+            "confirmed with the bank",
+            "validated against production banking",
+            "real account numbers",
+        ):
+            assert phrase not in text, f"{name} implies real-banking verification: {phrase!r}"
+
+
+def test_the_corpus_identifiers_really_are_synthetic():
+    """And the disclosure stays true: the record uses demo identifiers.
+
+    If someone later swaps in real-looking account data, the sentence above
+    would become a lie. This does not prove the numbers are fake - it pins the
+    fact that they are drawn from the documented demo set.
+    """
+    import json
+
+    data = json.loads(
+        (ROOT / "data" / "records" / "vendor_master.json").read_text(encoding="utf-8")
+    )
+    vendors = data["vendors"] if "vendors" in data else data
+    for vid, v in vendors.items():
+        for acct in v.get("allowlisted_accounts", []):
+            assert acct["account_number"].startswith("50100"), (
+                f"{vid} carries an identifier outside the demo range - the "
+                f"synthetic-data disclosure needs re-checking"
+            )
+        current = v.get("payment_defaults", {}).get("account_number", "")
+        if current:
+            assert current.startswith("50100"), vid

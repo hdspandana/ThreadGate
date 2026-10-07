@@ -373,8 +373,9 @@ Read that table carefully, because two rows flatter the baseline:
 
 The categories where reading is genuinely required are **mention_vs_request**
 (talking about a destination vs asking for it to change), **negation** (reading
-"not" in context) and **cross_message** (deciding which end of a thread is
-live). Those are the rows the model is for.
+"not" in context) and **cross_message** (telling a quoted or forwarded
+instruction from the live one, inside the single message being processed).
+Those are the rows the model is for.
 
 `cross_message` is named for what it is: **quoted and forwarded content inside a
 single message** - a `>`-quoted earlier mail, or a forwarded block. It is not
@@ -445,8 +446,10 @@ Read this part.
 - **A token-less request is the weakest case.** If the destination is outside the
   text and the model also fails to report the change language, there is no
   AI-independent evidence at all. Only the human attestation closes it.
-- **The vendor record is synthetic.** All vendors, accounts, IFSC codes and
-  emails in `data/` are fabricated.
+- **All financial identifiers are synthetic demo data.** Every vendor, account
+  number, IFSC code, bank and email in `data/` was fabricated for this project.
+  Nothing here was verified against, or obtained from, a real banking system,
+  and no claim in this repository rests on having done so.
 - **No mail-flow integration.** This gates a pasted email. It is not wired to
   Gmail, Outlook, or an ERP.
 - **Not a replacement for callback verification.** ThreadGate decides *when* a
@@ -492,7 +495,7 @@ directions, which is the only way a "not built" list stays honest.
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
-python -m pytest            # 565 tests, no network needed
+python -m pytest            # 569 tests, no network needed
 python scripts/secret_scan.py   # nothing credential-like in the tree or history
 python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
 python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped
