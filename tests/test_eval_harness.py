@@ -245,3 +245,169 @@ def test_every_model_backed_system_is_known_to_the_harness():
     for system in ("gemini", "ai_only", "hybrid_no_scan", "hybrid_no_validation"):
         assert system in run_eval.ALL_SYSTEMS
         assert system in run_eval.MODEL_SYSTEMS
+
+
+# ---------------------------------------------------------------------------
+# Item 4 - a non-CLEAR release is a first-class metric, not a hidden one
+# ---------------------------------------------------------------------------
+
+
+class TestNonClearReleasesCannotHideBehindAPerfectSafetyScore:
+    """The failure mode: safety 100% on the row, a waved-through case beneath it.
+
+    `unsafe` only counts cases labelled HOLD. A case labelled REVIEW that comes
+    back CLEAR is also a gate that did not gate, and reporting only the first
+    number is how the pre-registered-alternate bypass read as a clean run.
+    """
+
+    def test_metrics_report_the_gated_denominator_and_a_second_percentage(self):
+        m = run_eval.metrics(_results())
+        assert "gated" in m
+        assert "no_bypass_pct" in m
+        assert m["gated"] >= sum(1 for r in _results() if r.expected == "HOLD")
+
+    def test_no_bypass_pct_falls_when_a_gated_case_comes_back_clear(self):
+        rs = _results()
+        clean = run_eval.metrics(rs)
+
+        target = next(r for r in rs if r.expected == "REVIEW")
+        object.__setattr__(target.decision, "decision", "CLEAR")
+        dirty = run_eval.metrics(rs)
+
+        assert clean["no_bypass_pct"] == 100.0
+        assert dirty["no_bypass_pct"] < 100.0
+        assert dirty["non_clear_releases"] == 1
+
+    def test_a_perfect_safety_score_does_not_make_a_system_safe_on_its_own(self):
+        """The specific claim: unsafe 0 + safety 100% is not sufficient."""
+        rs = _results()
+        target = next(r for r in rs if r.expected == "REVIEW")
+        object.__setattr__(target.decision, "decision", "CLEAR")
+        m = run_eval.metrics(rs)
+
+        # The misleading combination this test exists to prevent.
+        assert m["unsafe_hold_releases"] == 0
+        assert m["safety_pct"] == 100.0
+        assert m["non_clear_releases"] == 1
+        assert m["no_bypass_pct"] < 100.0
+
+    def test_the_cli_table_shows_both_counts_and_both_percentages(self):
+        rendered = run_eval.render_main("v1", {"good": run_eval.metrics(_results())})
+        for column in ("non-CLR", "no-bypass %", "safety %", "unsafe"):
+            assert column in rendered, column
+
+    def test_the_cli_calls_out_a_non_clear_release_in_words(self):
+        """A column is easy to miss; the run has to say it out loud."""
+        rs = _results()
+        target = next(r for r in rs if r.expected == "REVIEW")
+        object.__setattr__(target.decision, "decision", "CLEAR")
+        m = run_eval.metrics(rs)
+
+        lines = run_eval.render_warnings({"x": m}, set())
+        text = "\n".join(lines)
+        assert "returned CLEAR" in text
+        assert target.case_id in text
+
+    def test_an_invalid_row_is_announced_too(self):
+        rs = _results()
+        m = run_eval.metrics(rs)
+        m["invalid"] = True
+        m["extractor_errors"] = 3
+        m["error_case_ids"] = ["TG-001"]
+        text = "\n".join(run_eval.render_warnings({"x": m}, {"x"}))
+        assert "INVALID" in text
+
+
+# ---------------------------------------------------------------------------
+# Item 5 - an invalid system produces no numbers at all
+# ---------------------------------------------------------------------------
+
+
+def _errored(n: int = 2):
+    """Results where the first `n` cases failed in the model layer."""
+    rs = _results()
+    for r in rs[:n]:
+        r.error = "extractor_error: 429 RESOURCE_EXHAUSTED"
+    return rs
+
+
+class TestAnInvalidSystemProducesNoQuotableFigure:
+    """The dangerous number is the fake zero, not the missing accuracy.
+
+    The pipeline fails closed, so an errored case becomes a HOLD. Errored cases
+    therefore score as perfect safety: unsafe 0, non-CLEAR releases 0. That is
+    the strongest claim the table can make, produced by a run that measured
+    nothing, and it is the number most likely to be quoted.
+    """
+
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "accuracy",
+            "safety_pct",
+            "no_bypass_pct",
+            "false_hold_pct",
+            "unsafe_hold_releases",
+            "non_clear_releases",
+            "false_holds",
+        ],
+    )
+    def test_every_headline_figure_is_nulled(self, key):
+        m = run_eval.metrics(_errored())
+        assert m["invalid"] is True
+        assert m[key] is None, key
+
+    def test_the_fake_zeros_are_gone(self):
+        """Before this fix, these read 0 - a perfect result from a broken run.
+
+        `is None` rather than `!= 0`, because the point is that no number is
+        published at all. A 0 would have passed the weaker assertion.
+        """
+        m = run_eval.metrics(_errored())
+        assert m["unsafe_hold_releases"] is None
+        assert m["non_clear_releases"] is None
+        assert m["non_clear_release_ids"] == []
+
+    def test_the_error_count_and_case_ids_survive(self):
+        m = run_eval.metrics(_errored(3))
+        assert m["extractor_errors"] == 3
+        assert len(m["error_case_ids"]) == 3
+
+    def test_an_invalid_row_renders_without_a_number(self):
+        rendered = run_eval.render_main("v1", {"gemini": run_eval.metrics(_errored())})
+        assert "INVALID" in rendered
+        assert "100.0" not in rendered
+        assert "0.0" not in rendered
+
+    def test_an_invalid_category_bucket_renders_as_invalid(self):
+        """`cat_table[category][system]` is the shape render_categories expects."""
+        assignments = {r.case_id: "direct_change" for r in _results()}
+        bucket = run_eval.by_category(_errored(), assignments)
+        cat_table = {"direct_change": {"gemini": bucket["direct_change"]}}
+        rendered = run_eval.render_categories("v1", cat_table, ["gemini"])
+        assert "INVALID" in rendered
+        assert "100" not in rendered
+
+    def test_a_valid_category_bucket_still_shows_both_counts(self):
+        assignments = {r.case_id: "direct_change" for r in _results()}
+        bucket = run_eval.by_category(_results(), assignments)
+        cat_table = {"direct_change": {"offline": bucket["direct_change"]}}
+        rendered = run_eval.render_categories("v1", cat_table, ["offline"])
+        assert "(u0 n0)" in rendered
+
+    def test_comparisons_suppressed_is_reported_in_the_json(self):
+        """The report has to say a comparison is missing, not silently omit it."""
+        src = (ROOT / "eval" / "run_eval.py").read_text(encoding="utf-8")
+        assert "comparisons_suppressed" in src
+        assert "a not in invalid_systems" in src
+
+    def test_a_valid_system_is_never_marked_invalid(self):
+        assert run_eval.metrics(_results()).get("invalid") is None
+
+
+def test_the_documentation_explains_both_permissive_metrics():
+    """Item 4: the README table must carry both columns, not just unsafe."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert readme.count("Non-CLR") >= 3, "all three set tables need the column"
+    assert readme.count("No-bypass %") >= 3
+    assert "non-CLEAR release" in readme

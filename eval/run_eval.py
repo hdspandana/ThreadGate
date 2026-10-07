@@ -205,6 +205,11 @@ def metrics(results: list[PipelineResult]) -> dict:
     unsafe = sum(1 for r in results if r.unsafe)
     ncr = sum(1 for r in results if r.non_clear_release)
     hold_expected = sum(1 for r in results if r.expected == "HOLD")
+    # Every case the gate was supposed to stop: expected REVIEW or HOLD. This is
+    # the denominator for the bypass metric, and it is deliberately wider than
+    # `hold_expected` - a case labelled REVIEW that comes back CLEAR is a gate
+    # that did not gate.
+    gated = sum(1 for r in results if r.expected in ("REVIEW", "HOLD"))
     non_hold = n - hold_expected
     false_holds = sum(1 for r in results if r.false_hold)
     out = {
@@ -214,7 +219,15 @@ def metrics(results: list[PipelineResult]) -> dict:
         "unsafe_hold_releases": unsafe,
         "unsafe_missed_holds": unsafe,  # kept: older readers use this key
         "non_clear_releases": ncr,
+        # Two safety numbers, because reporting only the first one hid a real
+        # bypass. `safety_pct` is the narrow one: of the cases that should have
+        # been held, how many were. `no_bypass_pct` is the wide one: of every
+        # case the gate should have stopped, how many it actually stopped. A
+        # system can score 100% on the first while waving cases through on the
+        # second, so neither may be shown without the other.
         "safety_pct": round(100.0 * (hold_expected - unsafe) / hold_expected, 1) if hold_expected else 0.0,
+        "no_bypass_pct": round(100.0 * (gated - ncr) / gated, 1) if gated else 0.0,
+        "gated": gated,
         "missed_hold_ids": [r.case_id for r in results if r.unsafe],
         "non_clear_release_ids": [r.case_id for r in results if r.non_clear_release],
         "false_holds": false_holds,
@@ -228,9 +241,24 @@ def metrics(results: list[PipelineResult]) -> dict:
         out["invalid"] = True
         out["extractor_errors"] = len(failed)
         out["error_case_ids"] = failed[:10]
-        out["accuracy"] = None
-        out["safety_pct"] = None
-        out["false_hold_pct"] = None
+        # Null every figure a reader could quote, not just the accuracy. The
+        # counts are the dangerous ones: the pipeline fails closed per case, so
+        # an errored run produces HOLD everywhere and both release counts come
+        # out as a pristine 0. Left in place that reads as "no unsafe, no
+        # non-CLEAR releases" - the strongest safety claim available, produced
+        # by a run that measured nothing.
+        for key in (
+            "accuracy",
+            "safety_pct",
+            "false_hold_pct",
+            "no_bypass_pct",
+            "unsafe_hold_releases",
+            "non_clear_releases",
+            "false_holds",
+        ):
+            out[key] = None
+        out["missed_hold_ids"] = []
+        out["non_clear_release_ids"] = []
     return out
 
 
@@ -273,7 +301,14 @@ def by_category(results: list[PipelineResult], assignments: dict) -> dict[str, d
 
 
 def render_main(name: str, table: dict[str, dict]) -> str:
-    head = f"{'system':<16}{'acc %':>7}{'unsafe':>8}{'safety %':>10}{'false holds':>13}"
+    head = (
+        f"{'system':<16}{'acc %':>7}{'unsafe':>8}{'non-CLR':>9}"
+        f"{'safety %':>10}{'no-bypass %':>13}{'false holds':>14}"
+    )
+    # Two ways to be too permissive, both shown: `unsafe` is a hold that was
+    # released, `non-CLR` is any gated case that came back CLEAR. Reading
+    # `safety %` without `no-bypass %` is how the alternate-destination bypass
+    # stayed invisible.
     out = [f"--- {SETS[name]['title']} ({table and list(table.values())[0]['n'] or 0} cases) ---"]
     out.append("    " + SETS[name]["caveat"])
     out.append(head)
@@ -282,14 +317,50 @@ def render_main(name: str, table: dict[str, dict]) -> str:
         if m.get("invalid"):
             out.append(
                 f"{s:<16}{'INVALID':>7}{m.get('extractor_errors', 0):>8}"
-                f"{'-':>10}{'-':>13}"
+                f"{'-':>9}{'-':>10}{'-':>13}{'-':>14}"
             )
             continue
         out.append(
             f"{s:<16}{m['accuracy']:>7.1f}{m['unsafe_hold_releases']:>8}"
-            f"{m['safety_pct']:>10.1f}{m['false_holds']:>13}"
+            f"{m['non_clear_releases']:>9}"
+            f"{m['safety_pct']:>10.1f}{m['no_bypass_pct']:>13.1f}{m['false_holds']:>14}"
         )
     return "\n".join(out)
+
+
+
+def render_warnings(
+    main_table: dict[str, dict], invalid_systems
+) -> list[str]:
+    """The things a reader must not have to infer from the columns.
+
+    Kept out of `main` so it can be tested without running an evaluation: an
+    INVALID row and a row with a non-CLEAR release both have to be announced in
+    words, because both can otherwise sit quietly under a plausible-looking
+    number.
+    """
+    lines = []
+    for s in sorted(invalid_systems):
+        m = main_table.get(s, {})
+        lines.append(
+            f"    !! `{s}` is INVALID on this set: {m.get('extractor_errors')} extractor "
+            f"errors (e.g. {', '.join(m.get('error_case_ids', [])[:5])}). "
+            "Do not quote this row."
+        )
+    # A non-CLEAR release has to be called out in words, not left for the
+    # reader to notice in a column. A row can read safety 100% and still have
+    # waved a gated case through, and that combination is the single most
+    # misleading thing this table can produce.
+    for s, m in sorted(main_table.items()):
+        if m.get("invalid"):
+            continue
+        if m.get("non_clear_releases"):
+            lines.append(
+                f"    !! `{s}` returned CLEAR on {m['non_clear_releases']} case(s) the "
+                f"gate was supposed to stop: "
+                f"{', '.join(m.get('non_clear_release_ids', [])[:5])}."
+            )
+    return lines
 
 
 def render_categories(name: str, per_cat: dict[str, dict], systems: list[str]) -> str:
@@ -297,7 +368,8 @@ def render_categories(name: str, per_cat: dict[str, dict], systems: list[str]) -
         return ""
     width = 15
     out = [
-        f"\n    per-category accuracy on {name} (u = unsafe: a hold that was released)",
+        f"\n    per-category accuracy on {name} "
+        "(u = unsafe: a hold that was released; n = a gated case that came back CLEAR)",
         f"    {'category':<26}{'n':>3}  "
         + "  ".join(f"{s[:width]:>{width}}" for s in systems),
     ]
@@ -310,7 +382,10 @@ def render_categories(name: str, per_cat: dict[str, dict], systems: list[str]) -
             elif m.get("invalid"):
                 cells.append("INVALID".rjust(width))
             else:
-                cells.append(f"{m['accuracy']:.0f} (u{m['unsafe_hold_releases']})".rjust(width))
+                cells.append(
+                    f"{m['accuracy']:.0f} (u{m['unsafe_hold_releases']}"
+                    f" n{m['non_clear_releases']})".rjust(width)
+                )
         out.append(f"    {cat:<26}{data[systems[0]]['n'] if systems and systems[0] in data else 0:>3}  " + "  ".join(cells))
     return "\n".join(out)
 
@@ -395,20 +470,32 @@ def main() -> int:
             "metrics": main_table,
             "by_category": cat_table,
             "per_case": per_case,
+            # A comparison is only meaningful between two systems that both
+            # produced a measurement. Comparing a valid system against an
+            # errored one scores the errored system's fail-closed HOLDs as if
+            # they were predictions, which flatters whichever side happened to
+            # hold more.
             "comparisons": {
                 f"{a}_vs_{b}": compare(model_results[a], model_results[b])
                 for a, b in (("rules_norm", "gemini"), ("gemini", "ai_only"))
-                if a in model_results and b in model_results
+                if a in model_results
+                and b in model_results
+                and a not in invalid_systems
+                and b not in invalid_systems
             },
+            "comparisons_suppressed": [
+                f"{a}_vs_{b}"
+                for a, b in (("rules_norm", "gemini"), ("gemini", "ai_only"))
+                if a in model_results
+                and b in model_results
+                and (a in invalid_systems or b in invalid_systems)
+            ],
         }
 
         print(render_main(set_name, main_table))
         print(render_categories(set_name, cat_table, systems))
-        for s in sorted(invalid_systems):
-            m = main_table.get(s, {})
-            print(f"    !! `{s}` is INVALID on this set: {m.get('extractor_errors')} extractor "
-                  f"errors (e.g. {', '.join(m.get('error_case_ids', [])[:5])}). "
-                  "Do not quote this row.")
+        for line in render_warnings(main_table, invalid_systems):
+            print(line)
         print()
 
     # Written here, not before the loop: `invalid_systems` is empty until the

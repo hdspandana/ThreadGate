@@ -268,26 +268,38 @@ Three sets, reported separately, because they mean different things.
 | `stress` | 20 | **Adversarial stress set.** Written *after* the first evaluation, from attack patterns and from failure modes visible in the design. | Robustness only. |
 | `combined` | 40 | Both together. **A stress evaluation, not an unbiased benchmark.** | Nothing as a single accuracy number. |
 
-Two error types are counted separately, because they cost different things:
+Three outcomes are counted separately, because they cost different things:
 
-- **unsafe** — a case that should be held was not. The only error that can lose
-  money.
+- **unsafe** — a case labelled `HOLD` came back softer. The only error that can
+  lose money.
+- **non-CLEAR release** — a case the gate was supposed to stop (labelled
+  `REVIEW` or `HOLD`) came back `CLEAR`. Also a bypass, and *not* visible in the
+  unsafe count: no hold was released, so nothing looks wrong.
 - **false hold** — a case that should have gone through was sent to a human.
   Costs review time.
 
+The two permissive failures get two percentages, and neither may be quoted
+without the other. `safety %` is the narrow one: of the cases that should have
+been *held*, how many were. `no-bypass %` is the wide one: of every case the
+gate should have *stopped*, how many it stopped. A system can read `safety %`
+100% while waving `REVIEW`-labelled cases through - that is exactly how the
+pre-registered-alternate bypass scored as a clean run - so the tables below show
+both columns side by side, and `python eval/run_eval.py` prints a warning naming
+every case that came back `CLEAR` when it should not have.
+
 ### Set 1 — frozen_v1, primary pre-frozen benchmark (20 cases)
 
-| System | Accuracy | Unsafe | False holds |
-| --- | --- | --- | --- |
-| Rules-only baseline (raw text) | 50.0% | 2 | 7 |
-| Rules-only baseline + normalisation | 60.0% | 0 | 7 |
-| **ThreadGate (Gemini)** | *pending — not yet run* | | |
-| ThreadGate, offline test double | 100.0% | 0 | 0 |
-| ThreadGate, model steered to say "no change" | 65.0% | **0** | 6 |
-| ThreadGate, steered model forging a verbatim quote | 65.0% | **0** | 6 |
-| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | |
-| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | |
-| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | |
+| System | Accuracy | Unsafe | Non-CLR | Safety % | No-bypass % | False holds |
+| --- | --- | --- | --- | --- | --- | --- |
+| Rules-only baseline (raw text) | 50.0% | 2 | 3 | 83.3% | 80.0% | 7 |
+| Rules-only baseline + normalisation | 60.0% | 0 | 1 | 100.0% | 93.3% | 7 |
+| **ThreadGate (Gemini)** | *pending — not yet run* | | | | | |
+| ThreadGate, offline test double | 100.0% | 0 | 0 | 100.0% | 100.0% | 0 |
+| ThreadGate, model steered to say "no change" | 70.0% | **0** | **0** | 100.0% | 100.0% | 6 |
+| ThreadGate, steered model forging a verbatim quote | 70.0% | **0** | **0** | 100.0% | 100.0% | 6 |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | | | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | | | | |
+| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | | | | |
 
 Every row marked *pending — not yet run* needs a `GEMINI_API_KEY`. None has
 been run, so none is filled in: the three ablations and the model-alone
@@ -297,33 +309,33 @@ a model result.
 
 ### Set 2 — stress additions, written after the first run (20 cases)
 
-| System | Accuracy | Unsafe | False holds |
-| --- | --- | --- | --- |
-| Rules-only baseline (raw text) | 60.0% | 2 | 5 |
-| Rules-only baseline + normalisation | 70.0% | 0 | 5 |
-| **ThreadGate (Gemini)** | *pending — not yet run* | | |
-| ThreadGate, offline test double | 100.0% | 0 | 0 |
-| ThreadGate, model steered to say "no change" | 75.0% | **0** | 4 |
-| ThreadGate, steered model forging a verbatim quote | 75.0% | **0** | 4 |
-| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | |
-| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | |
-| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | |
+| System | Accuracy | Unsafe | Non-CLR | Safety % | No-bypass % | False holds |
+| --- | --- | --- | --- | --- | --- | --- |
+| Rules-only baseline (raw text) | 60.0% | 2 | 3 | 84.6% | 81.2% | 5 |
+| Rules-only baseline + normalisation | 70.0% | 0 | 1 | 100.0% | 93.8% | 5 |
+| **ThreadGate (Gemini)** | *pending — not yet run* | | | | | |
+| ThreadGate, offline test double | 100.0% | 0 | 0 | 100.0% | 100.0% | 0 |
+| ThreadGate, model steered to say "no change" | 80.0% | **0** | **0** | 100.0% | 100.0% | 4 |
+| ThreadGate, steered model forging a verbatim quote | 80.0% | **0** | **0** | 100.0% | 100.0% | 4 |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | | | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | | | | |
+| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | | | | |
 
 ### Set 3 — combined, stress evaluation only (40 cases)
 
 Not an unbiased benchmark. Shown for completeness and for the category view.
 
-| System | Accuracy | Unsafe | False holds |
-| --- | --- | --- | --- |
-| Rules-only baseline (raw text) | 55.0% | 4 | 12 |
-| Rules-only baseline + normalisation | 65.0% | 0 | 12 |
-| **ThreadGate (Gemini)** | *pending — not yet run* | | |
-| ThreadGate, offline test double | 100.0% | 0 | 0 |
-| ThreadGate, model steered to say "no change" | 70.0% | **0** | 10 |
-| ThreadGate, steered model forging a verbatim quote | 70.0% | **0** | 10 |
-| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | |
-| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | |
-| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | |
+| System | Accuracy | Unsafe | Non-CLR | Safety % | No-bypass % | False holds |
+| --- | --- | --- | --- | --- | --- | --- |
+| Rules-only baseline (raw text) | 55.0% | 4 | 6 | 84.0% | 80.6% | 12 |
+| Rules-only baseline + normalisation | 65.0% | 0 | 2 | 100.0% | 93.5% | 12 |
+| **ThreadGate (Gemini)** | *pending — not yet run* | | | | | |
+| ThreadGate, offline test double | 100.0% | 0 | 0 | 100.0% | 100.0% | 0 |
+| ThreadGate, model steered to say "no change" | 75.0% | **0** | **0** | 100.0% | 100.0% | 10 |
+| ThreadGate, steered model forging a verbatim quote | 75.0% | **0** | **0** | 100.0% | 100.0% | 10 |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — not yet run* | | | | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — not yet run* | | | | | |
+| ThreadGate, ablation: evidence validation removed | *pending — not yet run* | | | | | |
 
 ### Where the reading is actually needed
 

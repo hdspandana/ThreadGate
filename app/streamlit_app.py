@@ -599,8 +599,12 @@ with st.expander("Demonstrate the single-use verification binding"):
 st.divider()
 st.subheader("The whole corpus, not one email")
 st.caption(
-    "`unsafe` counts cases that should be held but were not - the only error that can lose money. "
-    "`false hold` counts cases a human was asked to review unnecessarily - it costs time, not money."
+    "Two different ways to be too permissive, and both are shown. `unsafe` is a case that "
+    "should have been held but was not - the only error that can lose money. `non-CLR` is any "
+    "case the gate should have stopped that came back CLEAR. A system can read safety 100% and "
+    "still wave a gated case through, which is why `no-bypass %` sits next to `safety %` and "
+    "neither may be quoted alone. `false hold` is a case a human was asked to review "
+    "unnecessarily - it costs time, not money."
 )
 with st.expander("What each system is"):
     for name in ALL_SYSTEMS:
@@ -622,23 +626,57 @@ if st.button(f"Run {len(CASES)} cases across every system", type="secondary"):
             m = metrics(res)
             results_by_system[sysname] = res
             metrics_by_system[sysname] = m
-            rows.append(
-                {
-                    "system": sysname,
-                    "accuracy %": m["accuracy"],
-                    "unsafe": m["unsafe_missed_holds"],
-                    "safety %": m["safety_pct"],
-                    "false holds": m["false_holds"],
-                }
-            )
+            if m.get("invalid"):
+                # An errored run measures nothing. The pipeline fails closed,
+                # so its HOLDs are not predictions and must not be shown as a
+                # safety score: every figure on the row is blanked and the
+                # error count is the only number left.
+                rows.append(
+                    {
+                        "system": sysname,
+                        "accuracy %": "INVALID",
+                        "unsafe": "-",
+                        "non-CLR": "-",
+                        "safety %": "-",
+                        "no-bypass %": "-",
+                        "false holds": f'{m["extractor_errors"]} errors',
+                    }
+                )
+            else:
+                rows.append(
+                    {
+                        "system": sysname,
+                        "accuracy %": m["accuracy"],
+                        "unsafe": m["unsafe_missed_holds"],
+                        "non-CLR": m["non_clear_releases"],
+                        "safety %": m["safety_pct"],
+                        "no-bypass %": m["no_bypass_pct"],
+                        "false holds": m["false_holds"],
+                    }
+                )
         progress.progress((i + 1) / len(systems))
 
     st.table(rows)
 
     for s, m in zip(systems, rows):
+        if metrics_by_system[s].get("invalid"):
+            ids = ", ".join(metrics_by_system[s].get("error_case_ids", [])[:5])
+            st.error(
+                f"`{s}` is INVALID: {metrics_by_system[s]['extractor_errors']} case(s) "
+                f"failed in the model layer (e.g. {ids}). No figure from this row may "
+                f"be quoted - the pipeline fails closed, so its HOLDs are not "
+                f"predictions."
+            )
+            continue
         if m["unsafe"]:
             ids = ", ".join(metrics_by_system[s]["missed_hold_ids"])
             st.error(f"`{s}` released {m['unsafe']} case(s) that should have been held: {ids}")
+        if m["non-CLR"]:
+            ids = ", ".join(metrics_by_system[s]["non_clear_release_ids"])
+            st.error(
+                f"`{s}` returned CLEAR on {m['non-CLR']} case(s) the gate was supposed to "
+                f"stop: {ids}"
+            )
 
     if skipped:
         st.warning(
@@ -654,9 +692,17 @@ if st.button(f"Run {len(CASES)} cases across every system", type="secondary"):
         row = {"category": cat, "n": per_cat[systems[0]][cat]["n"]}
         for s in systems:
             m = per_cat[s].get(cat)
-            row[s] = f"{m['accuracy']:.0f} (u{m['unsafe_missed_holds']})" if m else "-"
+            if not m:
+                row[s] = "-"
+            elif m.get("invalid"):
+                row[s] = "INVALID"
+            else:
+                row[s] = (
+                    f"{m['accuracy']:.0f} (u{m['unsafe_missed_holds']} "
+                    f"n{m['non_clear_releases']})"
+                )
         cat_rows.append(row)
-    st.markdown("**Per-category accuracy** - `u` is unsafe: a hold that was released")
+    st.markdown("**Per-category accuracy** - `u` is unsafe: a hold that was released. `n` counts non-CLEAR releases: cases the gate should have stopped that came back CLEAR.")
     st.table(cat_rows)
     st.caption(
         "Categories were assigned after both case sets were frozen, so they describe where each "
