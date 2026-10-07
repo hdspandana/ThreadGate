@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 780" width="1160" height="780" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 795" width="1160" height="795" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif">
   <title>ThreadGate architecture — verify the change, not the message</title>
   <desc>Untrusted messages are interpreted by an AI that has no verdict field. Its structured output crosses a trust boundary as evidence only. A deterministic scanner, a closed-world evidence validator, a trusted reference and a comparator feed a monotone policy that emits CLEAR, REVIEW or HOLD. The AI has no path to the final decision.</desc>
 
@@ -27,7 +27,7 @@
     </style>
   </defs>
 
-  <rect width="1160" height="780" fill="#ffffff"/>
+  <rect width="1160" height="795" fill="#ffffff"/>
 
   <text x="30" y="34" font-size="21" font-weight="700" fill="#14213d">ThreadGate — verify the change, not the message</text>
   <text x="30" y="56" class="s">AI interprets the email. Code verifies the change against the record. A human attests before anything executes.</text>
@@ -127,6 +127,7 @@
   <path class="flow" d="M 1046 538 V 624"/>
 
   <text x="30" y="716" class="s">Legend — the ladder only escalates: CLEAR → REVIEW → HOLD. CLEAR means no change was identified; it is not an approval.</text>
-  <text x="30" y="736" class="s">Not implemented, and not claimed: attestation replay protection, reference version lineage, OCR or attachment inspection.</text>
-  <text x="30" y="756" class="s">The system has no risk score. An invoice amount is reported to the analyst and decides nothing.</text>
+  <text x="30" y="736" class="s">Attestation is single-use: a verification is bound to one request, one destination and one record version, and replaying it is refused.</text>
+  <text x="30" y="751" class="s">That binding is a record, not a cryptographic signature, and it does not prove who attested. Not implemented, and not claimed: OCR or attachment inspection.</text>
+  <text x="30" y="771" class="s">The system has no risk score. An invoice amount is reported to the analyst and decides nothing.</text>
 </svg>

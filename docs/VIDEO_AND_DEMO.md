@@ -1,6 +1,6 @@
 # Video script and demo sequence
 
-Everything below describes what the app actually renders at commit `6f9125f`.
+Everything below describes what the app actually renders in the frozen build.
 The narration quotes the real badge text, the real diff values and the real
 checklist items, so nothing has to be invented on camera.
 
