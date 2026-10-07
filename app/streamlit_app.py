@@ -35,6 +35,7 @@ from run_eval import (  # noqa: E402
     ALL_SYSTEMS,
     CATEGORIES,
     DISCLAIMER,
+    EVAL_AS_OF,
     MODEL_SYSTEMS,
     SETS,
     by_category,
@@ -42,6 +43,7 @@ from run_eval import (  # noqa: E402
     metrics,
     run_system,
 )
+from threadgate.clock import fixed  # noqa: E402
 
 try:
     from dotenv import load_dotenv
@@ -62,7 +64,11 @@ except ImportError:  # pragma: no cover
 # security boundary is the pipeline, which does not trust the UI at all.
 MAX_EMAIL_CHARS = 20_000
 MIN_SECONDS_BETWEEN_RUNS = 2.0
-REQUEST_TIMEOUT_SECONDS = 45.0
+# An elapsed-time nag, not a network timeout. The real bounds live in
+# the extractor: THREADGATE_HTTP_TIMEOUT_MS per attempt and
+# THREADGATE_TOTAL_BUDGET_MS across the retry loop. Calling this a
+# timeout would be a lie about where the limit is enforced.
+SLOW_REQUEST_SECONDS = 45.0
 
 BADGE = {
     "HOLD": ("#c1121f", "HOLD - verify out of band before anything executes"),
@@ -401,6 +407,8 @@ case_set_key = st.sidebar.radio(
 )
 st.sidebar.caption(SETS[case_set_key]["caveat"])
 CASES = load_cases(SETS[case_set_key]["path"])
+# Pinned for benchmark runs; deliberately NOT used for the single-email path.
+EVAL_CLOCK = fixed(EVAL_AS_OF)
 mode = st.sidebar.selectbox(
     "Extractor",
     ["gemini", "offline", "compromised", "compromised_quote"],
@@ -520,11 +528,16 @@ except Exception as exc:  # noqa: BLE001
         st.code(f"{type(exc).__name__}")
     st.stop()
 
-if result.elapsed_ms and result.elapsed_ms > REQUEST_TIMEOUT_SECONDS * 1000:
+if result.elapsed_ms and result.elapsed_ms > SLOW_REQUEST_SECONDS * 1000:
+    # Deliberately an elapsed-time notice, not a timeout warning: nothing was
+    # cut short and nothing failed. The decision this page is showing is
+    # complete - it was merely slow to arrive.
     st.warning(
-        f"This request took {result.elapsed_ms / 1000:.1f}s. The gate is "
-        "synchronous by design; a slow model shows up as latency, not as a "
-        "weaker decision."
+        f"This request took {result.elapsed_ms / 1000:.1f}s end to end, which is "
+        f"longer than the {SLOW_REQUEST_SECONDS:.0f}s this page treats as "
+        f"sluggish. Nothing timed out and nothing was cut short: the decision "
+        f"shown below is complete. The gate is synchronous by design, so a slow "
+        f"model shows up as latency, not as a weaker decision."
     )
 
 baseline = rules_only(case, VENDORS[case["vendor_id"]]).decision
@@ -599,6 +612,12 @@ with st.expander("Demonstrate the single-use verification binding"):
 st.divider()
 st.subheader("The whole corpus, not one email")
 st.caption(
+    f"Benchmark runs use the pinned evaluation date **{EVAL_AS_OF}**, the same "
+    f"date `python eval/run_eval.py` uses, so this table reproduces the "
+    f"command-line numbers. Single-email runs above use the real clock: a "
+    f"deployed demo should judge the record against actual time."
+)
+st.caption(
     "Two different ways to be too permissive, and both are shown. `unsafe` is a case that "
     "should have been held but was not - the only error that can lose money. `non-CLR` is any "
     "case the gate should have stopped that came back CLEAR. A system can read safety 100% and "
@@ -622,7 +641,11 @@ if st.button(f"Run {len(CASES)} cases across every system", type="secondary"):
     progress = st.progress(0.0)
     for i, sysname in enumerate(systems):
         with st.spinner(f"running {sysname}..."):
-            res = run_system(sysname, CASES, VENDORS)
+            # The same pinned clock the CLI uses. Without it the benchmark
+            # judged reference freshness against the wall clock, so its
+            # numbers drifted away from `python eval/run_eval.py` as real
+            # time passed and neither surface could reproduce the other.
+            res = run_system(sysname, CASES, VENDORS, clock=EVAL_CLOCK)
             m = metrics(res)
             results_by_system[sysname] = res
             metrics_by_system[sysname] = m

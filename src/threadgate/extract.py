@@ -201,17 +201,26 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
     prompt leak cannot disclose what is on file. `tests/test_trust_boundary.py`
     fails if trusted record state ever reaches this path.
     """
-    try:
-        from google import genai
-        from google.genai import types
-    except ImportError as exc:  # pragma: no cover
-        raise ExtractorError("google-genai is not installed") from exc
-
+    # The key is checked before the SDK is imported, on purpose.
+    #
+    # The other order meant that on any machine without the SDK installed - a
+    # fresh checkout, a lean deployment image, the reviewer's laptop - asking
+    # for a Gemini result with no key produced "google-genai is not installed"
+    # instead of "GEMINI_API_KEY is not set". Same situation, two different
+    # errors depending on what happened to be installed, and the first one
+    # sends the reader chasing a dependency that is not the problem. The
+    # missing key is the more specific diagnosis, so it is reported first.
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         raise ExtractorError(
             "GEMINI_API_KEY is not set. Put it in .env (local) or in the deployment secret store."
         )
+
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError as exc:  # pragma: no cover
+        raise ExtractorError("google-genai is not installed") from exc
 
     # The SDK emits a standing automatic-function-calling advisory on every
     # generate_content call even when no tools are configured, which would scroll
@@ -246,8 +255,26 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
         system_instruction=PRODUCTION_SYSTEM_PROMPT,
     )
 
+    # An end-to-end budget, separate from the per-request timeout.
+    #
+    # The HTTP timeout bounds one attempt; three attempts with backoff bound
+    # nothing. Without this the worst case is unbounded in the way that matters
+    # to a caller: a model that answers slowly but not slowly enough to trip
+    # the per-request timeout can occupy the calling thread for three full
+    # timeouts plus backoff, and in a synchronous UI that is a session nobody
+    # can use. This is the number a caller can actually plan around, so it is
+    # enforced here rather than left to the UI to guess at.
+    budget_ms = int(os.environ.get("THREADGATE_TOTAL_BUDGET_MS", "90000"))
+    deadline = time.monotonic() + budget_ms / 1000.0
+
     last_err: Exception | None = None
     for attempt in range(3):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ModelTimeoutError(
+                f"the model run exceeded its {budget_ms}ms end-to-end budget "
+                f"after {attempt} attempt(s)"
+            )
         try:
             resp = client.models.generate_content(
                 model=model,
@@ -263,7 +290,10 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
             return Extraction.model_validate_json(text)
         except Exception as exc:  # noqa: BLE001 - surface after retries
             last_err = exc
-            time.sleep(0.6 * (attempt + 1))
+            # Never sleep past the budget: the backoff is here to ride out a
+            # transient failure, and waiting out a backoff that outlives the
+            # budget only delays the answer the caller is already owed.
+            time.sleep(min(0.6 * (attempt + 1), max(0.0, deadline - time.monotonic())))
             if _is_timeout(exc) and attempt == 2:
                 # Raised after the backoff, so a timeout costs the same three
                 # attempts as any other failure. A timeout that gave up early
@@ -329,15 +359,17 @@ def ai_only_decide(nt: NormalizedText, vendor: Vendor, model: str | None = None)
     and code decides". It is not reachable from the gate, it has no effect on
     any decision ThreadGate makes, and no product code imports it.
     """
+    # Same ordering rule as `gemini_extract`: the key is diagnosed first, so a
+    # missing key reports as a missing key on a machine without the SDK too.
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise ExtractorError("GEMINI_API_KEY is not set")
+
     try:
         from google import genai
         from google.genai import types
     except ImportError as exc:  # pragma: no cover
         raise ExtractorError("google-genai is not installed") from exc
-
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        raise ExtractorError("GEMINI_API_KEY is not set")
 
     for name in ("google_genai", "google_genai.models", "google.genai", "google"):
         logging.getLogger(name).setLevel(logging.ERROR)
