@@ -80,7 +80,7 @@ on file, and if not, does a human have to look at it?**
 ### 2. Technical approach and components
 
 **Stack:** Python, Google Gemini (`gemini-2.5-flash`) for interpretation only,
-Pydantic for output contracts, Streamlit for the demo, pytest for the 594-test
+Pydantic for output contracts, Streamlit for the demo, pytest for the 611-test
 suite. No embeddings, no vector store, no OCR, no URL scanning, no threat feed.
 
 The pipeline is deliberately asymmetric. The model sits in exactly one box, and
@@ -219,7 +219,12 @@ Two results are worth stating plainly:
   reporting no change, in one variant forging a verbatim quote from the email to
   justify it — produces **zero** unsafe outcomes across both sets. Accuracy
   drops and legitimate mail goes to a human instead. This is enforced by tests,
-  not by hoping.
+  not by hoping: `test_no_unsafe_outcomes_anywhere` and
+  `test_a_hold_trigger_can_never_produce_a_clear` fail if a single case clears
+  under either steered harness, `test_adversarial_output_cannot_turn_a_hold_into_a_clear`
+  covers a forged API response directly, and
+  `test_both_adversarial_harnesses_still_exist_and_release_nothing` pins the
+  harnesses themselves so the claim cannot pass by deleting the attacker.
 - **The rules baseline is not beaten on everything, and that matters.** It
   scores 100% on the injection and urgency categories because it holds
   *everything*, which is the same behaviour that gives it 0% on the benign
@@ -321,13 +326,17 @@ of model behaviour, and must not be captioned as Gemini output. Re-running
    **2** if any model system was skipped, so a silently absent key cannot look
    like a completed run. Output lands in `results/`.
 2. Re-run `python scripts/kill_gate.py` and `python -m pytest`; both must be
-   green on the final commit (594 tests, 18 kill-gate checks).
+   green on the final commit (611 tests, 18 kill-gate checks).
 3. `git log --reverse` — the first commit must be dated after 2026-10-03 12:00
    EDT / 21:30 IST.
 4. Confirm no key is committed: `python scripts/secret_scan.py` must print
-   `RESULT: clean`. It checks the working tree *and* every committed blob,
-   and it already excludes the literal pattern strings that appear in this
-   file and in `secret_scan.py` itself.
+   `RESULT: clean` and exit **0**. It checks the working tree *and* every
+   committed blob, and it already excludes the literal pattern strings that
+   appear in this file and in `secret_scan.py` itself.
+   Run it **from a clone**: the command needs `.git`. From the submitted ZIP it
+   prints `tree clean, history NOT SCANNED` and exits **3** — which is the
+   honest answer when there is no history to read, and is deliberately not the
+   same output as a clean history. A hit exits **1**.
    If you prefer the grep form, it must include the length suffix:
    `git ls-files | xargs grep -lE 'AIza[0-9A-Za-z_-]{20,}'`.
    The bare word `AIza` will not do — three tracked files contain it.

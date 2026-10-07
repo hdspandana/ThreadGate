@@ -146,7 +146,8 @@ Record at 1500x1050, browser at default zoom.
 **Setup**
 
 1. `cp .env.example .env`, add `GEMINI_API_KEY=...`
-2. `streamlit run app/streamlit_app.py`
+2. `python scripts/serve.py` (or `streamlit run app/streamlit_app.py` if
+   Streamlit is on your PATH)
 3. Confirm the sidebar reads `API key: configured (ends ...xxxx)`.
 
 **Shot 1 — landing / TG-001**

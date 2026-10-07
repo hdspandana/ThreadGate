@@ -5,8 +5,17 @@ deleted two commits ago is still in the history of a public repository.
 
     python scripts/secret_scan.py
 
-Exit code 1 if anything matches. If it does, do not push, and do not rewrite
-history in a hurry - report it first.
+Exit codes, because "could not check" is not the same as "checked and clean":
+
+    0  tree clean, history clean          -> RESULT: clean
+    1  something matched                  -> DO NOT PUSH
+    3  tree clean, history not readable   -> no .git (the submitted ZIP) or no
+                                             git on PATH (a Windows box without
+                                             Git for Windows). Run it from a
+                                             clone for the full check.
+
+If anything matches, do not push, and do not rewrite history in a hurry -
+report it first.
 """
 
 from __future__ import annotations
@@ -81,19 +90,58 @@ def scan_working_tree() -> list[tuple[str, str, str]]:
     return hits
 
 
-def scan_history() -> list[tuple[str, str, str]]:
-    """Every blob that has ever been committed, in every commit."""
-    hits: list[tuple[str, str, str]] = []
+def _git(args: list[str]) -> tuple[bool, str, str]:
+    """Run a read-only git command. Returns (ok, stdout, reason).
+
+    `reason` is empty on success, otherwise one of `git-not-found` (no git
+    binary on PATH - the normal case on a Windows box without Git for Windows)
+    or `no-repository` (git is installed, but this directory is not a
+    repository - the normal case for the submitted ZIP, which has no .git).
+    """
     try:
-        revs = subprocess.run(["git", "rev-list", "--all"], cwd=ROOT,
-                              capture_output=True, text=True, check=True).stdout.split()
-    except subprocess.CalledProcessError:
-        return [("git-error", "rev-list failed", "unable to scan history")]
+        proc = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
+    except FileNotFoundError:
+        return False, "", "git-not-found"
+    except OSError:  # pragma: no cover - unreadable / not executable
+        return False, "", "git-not-found"
+    if proc.returncode != 0:
+        return False, "", "no-repository"
+    return True, proc.stdout, ""
+
+
+def _git_bytes(args: list[str]) -> tuple[bool, bytes, str]:
+    """As `_git`, for blobs that may not be text (screenshots, for instance)."""
+    try:
+        proc = subprocess.run(["git", *args], cwd=ROOT, capture_output=True)
+    except (FileNotFoundError, OSError):
+        return False, b"", "git-not-found"
+    if proc.returncode != 0:
+        return False, b"", "no-repository"
+    return True, proc.stdout, ""
+
+
+def scan_history() -> tuple[list[tuple[str, str, str]], str]:
+    """Every blob that has ever been committed, in every commit.
+
+    Returns the findings *and* whether the history was actually read. The
+    earlier version returned `[("git-error", ...)]` when `git rev-list` failed,
+    which counted as a finding: running the documented command from the
+    submitted ZIP (no `.git` directory) printed "1 finding(s). DO NOT PUSH."
+    while `docs/DEVPOST.md` told the reader it must print `RESULT: clean`.
+    An unreadable history is not a leak, and it is not a clean bill of health
+    either - it is a third state, reported as one.
+    """
+    hits: list[tuple[str, str, str]] = []
+    ok, out, reason = _git(["rev-list", "--all"])
+    if not ok:
+        return [], reason
+    revs = out.split()
     seen: set[str] = set()
     for rev in revs:
-        listing = subprocess.run(["git", "ls-tree", "-r", rev], cwd=ROOT,
-                                 capture_output=True, text=True)
-        for line in listing.stdout.splitlines():
+        ok, listing_out, reason = _git(["ls-tree", "-r", rev])
+        if not ok:
+            return [], reason
+        for line in listing_out.splitlines():
             parts = line.split()
             if len(parts) < 4:
                 continue
@@ -111,14 +159,15 @@ def scan_history() -> list[tuple[str, str, str]]:
                 continue
             # Binary blobs (PNG screenshots, for instance) must not crash the
             # audit; decode lossily and let the patterns find nothing.
-            raw = subprocess.run(["git", "cat-file", "-p", blob], cwd=ROOT,
-                                 capture_output=True).stdout
+            ok, raw, reason = _git_bytes(["cat-file", "-p", blob])
+            if not ok:
+                return [], reason
             try:
                 blob_text = raw.decode("utf-8")
             except UnicodeDecodeError:
                 continue
             hits.extend(scan_text(blob_text, f"{rev[:8]}:{name}"))
-    return hits
+    return hits, "scanned"
 
 
 def gitignore_covers_secrets() -> bool:
@@ -126,9 +175,16 @@ def gitignore_covers_secrets() -> bool:
     return all(token in gi for token in (".env", "secrets.toml", "__pycache__"))
 
 
+HISTORY_REASONS = {
+    "no-repository": "not a git repository, so there is no history to read",
+    "git-not-found": "git is not installed or not on PATH",
+}
+
+
 def main() -> int:
     tree_hits = scan_working_tree()
-    history_hits = scan_history()
+    history_hits, history_status = scan_history()
+    history_scanned = history_status == "scanned"
 
     print("=" * 68)
     print("SECRET AUDIT")
@@ -136,7 +192,10 @@ def main() -> int:
     print(f"\nworking tree : {len(tree_hits)} finding(s)")
     for name, loc, red in tree_hits:
         print(f"  [HIT] {name}  {loc}  ->  {red}")
-    print(f"git history  : {len(history_hits)} finding(s) across all commits")
+    if history_scanned:
+        print(f"git history  : {len(history_hits)} finding(s) across all commits")
+    else:
+        print(f"git history  : NOT SCANNED - {HISTORY_REASONS.get(history_status, history_status)}")
     for name, loc, red in history_hits:
         print(f"  [HIT] {name}  {loc}  ->  {red}")
 
@@ -151,6 +210,15 @@ def main() -> int:
     if total:
         print(f"RESULT: {total} finding(s). DO NOT PUSH. Report before touching history.")
         return 1
+    if not history_scanned:
+        # A clean tree is not the same claim as a clean history. Saying so
+        # plainly is the point: three states, three exit codes.
+        print(
+            "RESULT: tree clean, history NOT SCANNED "
+            f"({HISTORY_REASONS.get(history_status, history_status)}). "
+            "Run this from a clone of the repository for the full check."
+        )
+        return 3
     print("RESULT: clean. No credential-like strings in the tree or in any committed blob.")
     return 0
 

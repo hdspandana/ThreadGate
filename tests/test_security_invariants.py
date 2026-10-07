@@ -11,6 +11,9 @@ version lineage, stale-reference escalation) are implemented and tested.
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import pytest
 
 from threadgate.extract import compromised_extract, compromised_quote_extract, offline_extract
@@ -163,18 +166,99 @@ def _vendors():
                         / "data" / "records" / "vendor_master.json")
 
 
-def test_only_policy_produces_a_decision():
-    """The decision type is constructed in policy, and nowhere else in the gate."""
-    import subprocess
+# policy for the gate, baseline for the rules-only comparison. Nothing else in
+# src/threadgate may mint a decision.
+ALLOWED_DECISION_MINTERS = {"policy.py", "baseline.py"}
 
-    out = subprocess.run(
-        ["grep", "-rn", "Decision(decision=", "src/threadgate", "--include=*.py"],
-        capture_output=True, text=True, cwd=".",
-    ).stdout
-    files = {line.split(":")[0] for line in out.splitlines() if line.strip()}
-    # policy for the gate, baseline for the rules-only comparison, eval for the
-    # AI-only ablation row. Nothing else in src/ may mint a decision.
-    assert files <= {
-        "src/threadgate/policy.py",
-        "src/threadgate/baseline.py",
-    }, files
+
+def _decision_aliases(tree, path):
+    """Local names that refer to the decision type in one module.
+
+    Handles `from .policy import Decision`, `... import Decision as D`,
+    `import threadgate.policy as pol` and `from threadgate import policy`
+    followed by `policy.Decision(...)`. The previous version of this test grepped
+    for the literal text `Decision(decision=` and so was blind to every aliased
+    form and to any constructor split across lines. S4 below in the sabotage
+    notes is the module-qualified form, which this resolver initially missed too.
+    """
+    names = {"Decision"}
+    module_names = {"policy", "baseline"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name == "Decision":
+                    names.add(alias.asname or alias.name)
+                elif alias.name in module_names:
+                    # `from threadgate import policy` / `from . import policy`
+                    names.add((alias.asname or alias.name) + ".Decision")
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[-1] in module_names:
+                    # `import threadgate.policy` / `import threadgate.policy as pol`
+                    names.add((alias.asname or alias.name) + ".Decision")
+    return names
+
+
+def _mints_a_decision(tree, path):
+    """True if this module constructs the decision type with a verdict."""
+    names = _decision_aliases(tree, path)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        called = ast.unparse(node.func)
+        if called not in names:
+            continue
+        if any(kw.arg == "decision" for kw in node.keywords):
+            return True
+    return False
+
+
+def test_only_policy_produces_a_decision():
+    """The decision type is constructed in policy and baseline, and nowhere else.
+
+    Rewritten from a `grep` subprocess for three reasons, all of which were
+    demonstrated before this version replaced it:
+
+    1. It could not run without GNU grep. On Windows the subprocess raises
+       FileNotFoundError, so the whole suite errors out rather than failing.
+    2. It passed while checking nothing. `cwd="."` plus empty stdout gave
+       `set() <= {...}` -> True, so running pytest from any other directory
+       produced a green test that had read no files at all.
+    3. The text pattern `Decision(decision=` matched only `baseline.py`; the
+       real call in `policy.py` is split across lines, and an aliased import
+       evades the pattern's file-level scope too.
+
+    The scan is now AST-based and asserts what it actually read, so an empty or
+    misdirected scan is a failure rather than a pass.
+    """
+    import ast
+
+    gate_dir = Path(__file__).resolve().parents[1] / "src" / "threadgate"
+    sources = sorted(gate_dir.glob("*.py"))
+
+    # Fail closed: an empty scan is not a clean scan.
+    assert sources, f"no sources found under {gate_dir}"
+    assert len(sources) >= 10, f"only {len(sources)} modules scanned under {gate_dir}"
+
+    scanned = {p.name for p in sources}
+    assert {"policy.py", "baseline.py"} <= scanned, (
+        f"the two modules that may mint a decision are missing from the scan: "
+        f"{sorted(scanned)}"
+    )
+
+    minters = set()
+    for path in sources:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        if _mints_a_decision(tree, path):
+            minters.add(path.name)
+
+    assert minters <= ALLOWED_DECISION_MINTERS, (
+        f"a module outside {sorted(ALLOWED_DECISION_MINTERS)} constructs a "
+        f"Decision: {sorted(minters)}"
+    )
+    # And the guard is not vacuous in the other direction: the scan must find
+    # the two constructors that legitimately exist.
+    assert minters == ALLOWED_DECISION_MINTERS, (
+        f"expected a decision in {sorted(ALLOWED_DECISION_MINTERS)}, found "
+        f"{sorted(minters)} - the detector has stopped detecting"
+    )

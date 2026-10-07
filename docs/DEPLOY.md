@@ -8,13 +8,16 @@ stored as a secret rather than in the repo.
 - The repo must be public on GitHub. Devpost judges need to read the code.
 - Confirm nothing sensitive is committed:
   ```bash
-  python scripts/secret_scan.py
-  # or, equivalently, the grep form - note the {20,} so the
-  # literal string "AIza" in these docs does not match itself:
-  git ls-files | xargs grep -lE "AIza[0-9A-Za-z_\-]{20,}" || echo "clean"
+  python scripts/secret_scan.py       # run from a clone; exit 0 = tree + history clean
   git check-ignore .env .streamlit/secrets.toml
   ```
   `.env` and `.streamlit/secrets.toml` are both in `.gitignore`.
+  Exit **3** means the tree was clean but the history could not be read — you
+  are in the ZIP (no `.git`) or `git` is not on `PATH`. That is not a leak, and
+  it is not the full check either; clone the repository and re-run it for the
+  history claim. The grep form, if you prefer it, must include the length
+  suffix: `git ls-files | xargs grep -lE "AIza[0-9A-Za-z_\-]{20,}"` — the bare
+  word `AIza` appears in these docs and in `secret_scan.py` itself.
 
 ## Steps
 
@@ -81,7 +84,8 @@ changes it never verified.
 
 ```bash
 cp .env.example .env      # add GEMINI_API_KEY
-streamlit run app/streamlit_app.py
+python scripts/serve.py           # local check before deploying
+#   streamlit run app/streamlit_app.py is equivalent if it is on PATH
 ```
 
 `.env` is read via `python-dotenv` at import time and is gitignored.

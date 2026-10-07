@@ -50,13 +50,25 @@ def _collected_test_names() -> set[str]:
     return set(re.findall(r"<Function (test_[a-z0-9_]+)", out))
 
 
+# The evidence tables in these documents cite tests by name, and a citation is
+# the whole claim. These floors used to be `pytest.skip` for any document that
+# cited nothing, which turned "the evidence was deleted" into a green suite
+# with a quiet skip - the same fail-open shape as the grep guard in
+# test_security_invariants.py. README had a floor elsewhere; DEVPOST had none.
+MIN_CITED_TESTS = {"README.md": 20, "docs/DEVPOST.md": 3}
+
+
 @pytest.mark.parametrize("name", DOCS[:2])
 def test_every_test_named_in_the_docs_exists(name):
     """A doc that cites a test that no longer exists is citing nothing."""
     body = doc(name)
     names = sorted(set(re.findall(r"`(test_[a-z0-9_]+)`", body)))
-    if not names:
-        pytest.skip(f"{name} cites no test names")
+    floor = MIN_CITED_TESTS[name]
+    assert len(names) >= floor, (
+        f"{name} cites {len(names)} test names, below the floor of {floor}. "
+        "If this is deliberate, lower the floor in the same commit - but the "
+        "evidence table is the reason these documents are checkable at all."
+    )
     have = _collected_test_names()
     missing = [n for n in names if n not in have]
     assert missing == [], f"{name} cites tests that do not exist: {missing}"
@@ -352,16 +364,27 @@ def _kill_gate_check_count() -> int:
     return len(re.findall(r"^\[(?:PASS|FAIL)\]", out, re.MULTILINE))
 
 
-def test_the_stated_kill_gate_check_count_matches_the_gate():
-    """The gate grew from 17 to 18 checks; the doc said 17.
+KILL_GATE_CLAIMS = [
+    ("docs/DEVPOST.md", r"final commit \(\d+ tests, (\d+) kill-gate checks\)"),
+    ("README.md", r"# (\d+) go/no-go checks"),
+]
 
-    Same rule as the test count: measured, not hand-written.
+
+@pytest.mark.parametrize("name,pattern", KILL_GATE_CLAIMS)
+def test_the_stated_kill_gate_check_count_matches_the_gate(name, pattern):
+    """The gate grew from 17 to 18 checks; the docs said 17.
+
+    This test used to read DEVPOST only, and its own docstring said the gate
+    had grown to 18 - so it fixed one of the two places and left
+    `README.md:497` claiming 17 go/no-go checks for the rest of the build. A
+    counted claim is only covered if every place that states it is checked, so
+    the patterns are now a list and each stated form is measured against the
+    gate itself.
     """
-    m = re.search(r"final commit \(\d+ tests, (\d+) kill-gate checks\)",
-                  doc("docs/DEVPOST.md"))
-    assert m, "the kill-gate claim is missing from DEVPOST"
+    m = re.search(pattern, doc(name))
+    assert m, f"no kill-gate count matching {pattern!r} found in {name} - update the pattern"
     assert int(m.group(1)) == _kill_gate_check_count(), (
-        f"DEVPOST states {m.group(1)} kill-gate checks but the gate runs "
+        f"{name} states {m.group(1)} kill-gate checks but the gate runs "
         f"{_kill_gate_check_count()}"
     )
 

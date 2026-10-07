@@ -30,7 +30,8 @@ pip install -r requirements.txt
 python -m pytest                   # no network, no API key required
 python scripts/kill_gate.py        # go/no-go on the concept
 make eval                          # every system except the model
-streamlit run app/streamlit_app.py # serves on http://localhost:8501
+python scripts/serve.py            # serves on http://localhost:8501
+#   (streamlit run app/streamlit_app.py is equivalent when streamlit is on PATH)
 ```
 
 All five must pass before anything is claimed as working.

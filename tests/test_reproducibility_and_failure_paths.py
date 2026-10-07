@@ -222,3 +222,148 @@ def test_a_missing_key_still_names_the_key_when_the_sdk_is_absent(monkeypatch):
         gemini_extract(NT)
     assert "GEMINI_API_KEY" in str(exc.value)
     assert "not installed" not in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# the suite's default clock is pinned; the live clock is still the live clock
+# ---------------------------------------------------------------------------
+def test_the_suite_runs_on_the_pinned_clock_not_the_calendar():
+    """The autouse fixture must actually be in effect.
+
+    Without it, every test that takes the default `SystemClock()` is measured
+    against today, and the frozen record goes stale on a date rather than
+    because anything changed. If someone deletes the fixture, this fails.
+    """
+    from threadgate.clock import as_of
+
+    assert as_of(SystemClock()).isoformat() == "2026-10-06"
+
+
+def test_the_live_clock_is_really_wall_clock(monkeypatch):
+    """The pin must not be achieved by breaking `SystemClock`.
+
+    A fixture that pinned the clock by rewriting the production class would
+    hide a real regression in the live path - the app would then decide against
+    a frozen date forever. This drops the pin for the duration of one test and
+    checks that `SystemClock.now()` still tracks the wall clock, in UTC.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    monkeypatch.undo()  # remove `_pin_the_default_clock` for this test only
+
+    before = datetime.now(timezone.utc)
+    got = SystemClock().now()
+    after = datetime.now(timezone.utc)
+
+    assert got.tzinfo is not None, "the live clock returned a naive datetime"
+    assert got.utcoffset() == timedelta(0), got.utcoffset()
+    assert before - timedelta(seconds=5) <= got <= after + timedelta(seconds=5), got
+
+
+def test_a_stale_record_is_still_stale_when_a_clock_says_so():
+    """Pinning the default must not remove the ability to test staleness.
+
+    The fix for the calendar dependency is a default, not a removal: an
+    explicit clock still drives the state, so the stale and missing behaviours
+    remain reachable and are still covered - at 2027-06-01 the same record is
+    STALE, which is what `test_verification_and_lineage.py` asserts.
+    """
+    from threadgate import reference as ref
+    from threadgate.records import load_vendors
+
+    vendors = load_vendors(ROOT / "data" / "records" / "vendor_master.json")
+    vendor = vendors["V-1001"]
+    assert ref.reference_state(vendor, fixed("2026-10-06")) == "CURRENT"
+    assert ref.reference_state(vendor, fixed("2027-06-01")) == "STALE"
+    assert ref.reference_state(vendor, SystemClock()) == "CURRENT", (
+        "the pinned default reads 2026-10-06, three weeks after the record was "
+        "confirmed - if this says STALE the fixture is not being applied"
+    )
+
+
+# ---------------------------------------------------------------------------
+# the secret audit: "could not check" is not "checked and clean"
+# ---------------------------------------------------------------------------
+def _secret_scan_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_secret_scan_for_test", ROOT / "scripts" / "secret_scan.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _minimal_tree(tmp_path):
+    """A directory shaped like the submission: no .git, but a real .gitignore."""
+    (tmp_path / ".gitignore").write_text(
+        ".env\nsecrets.toml\n__pycache__\n", encoding="utf-8")
+    return tmp_path
+
+
+def test_a_missing_history_is_reported_as_unscanned_not_as_a_finding(tmp_path, monkeypatch):
+    """The submitted ZIP has no .git, and that must not read as a leak.
+
+    The earlier version turned `git rev-list` failing into a finding, so running
+    the documented command from the ZIP printed "1 finding(s). DO NOT PUSH."
+    while DEVPOST said it must print `RESULT: clean`.
+    """
+    scan = _secret_scan_module()
+    monkeypatch.setattr(scan, "ROOT", _minimal_tree(tmp_path))
+    monkeypatch.setattr(scan, "scan_history", lambda: ([], "no-repository"))
+
+    code = scan.main()
+    assert code == 3, "an unscanned history must not exit 0"
+
+    import io
+    import contextlib
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        scan.main()
+    out = buf.getvalue()
+    assert "DO NOT PUSH" not in out, out
+    assert "NOT SCANNED" in out, out
+    assert "RESULT: clean." not in out, (
+        "the tree-only result must not be printed as the full clean result"
+    )
+
+
+def test_no_git_on_path_does_not_traceback(tmp_path, monkeypatch):
+    """A Windows box without Git for Windows has no `git` binary at all."""
+    scan = _secret_scan_module()
+    monkeypatch.setattr(scan, "ROOT", _minimal_tree(tmp_path))
+
+    def no_git(args):
+        return False, "", "git-not-found"
+
+    monkeypatch.setattr(scan, "_git", no_git)
+
+    import io
+    import contextlib
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        code = scan.main()
+    out = buf.getvalue()
+    assert code == 3, out
+    assert "not installed or not on PATH" in out, out
+    assert "DO NOT PUSH" not in out, out
+
+
+def test_the_clean_result_is_still_reported_when_history_is_readable():
+    """The strong claim has to remain reachable, or the fix traded one bad
+    message for another: from a clone, `RESULT: clean` and exit 0."""
+    import io
+    import contextlib
+
+    repo = ROOT / ".git"
+    if not repo.exists():
+        pytest.skip("not a clone - the full-history claim cannot be checked here")
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        code = _secret_scan_module().main()
+    assert code == 0, buf.getvalue()
+    assert "RESULT: clean" in buf.getvalue()
+    assert "NOT SCANNED" not in buf.getvalue()

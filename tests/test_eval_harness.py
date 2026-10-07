@@ -418,6 +418,21 @@ def test_the_documentation_explains_both_permissive_metrics():
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(scope="module")
+def stored():
+    """The stored evaluation artifact.
+
+    Defined at module level rather than as a class-scoped method inside
+    `TestTheStoredReportMatchesTheCurrentCode`: pytest warns
+    (`PytestRemovedIn10Warning: Class-scoped fixture defined as instance method
+    is deprecated`) and errors on pytest 10, which is inside the declared range
+    `pytest>=9.0.3,<10`'s next major. The fixture does not need the class.
+    """
+    path = ROOT / "results" / "latest.json"
+    assert path.exists(), "results/latest.json is missing - run eval/run_eval.py"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 class TestTheStoredReportMatchesTheCurrentCode:
     """`results/latest.json` is quoted by the README.
 
@@ -427,12 +442,6 @@ class TestTheStoredReportMatchesTheCurrentCode:
     JSON: a hash would go stale on the next commit, whereas recomputing the
     runnable rows catches the thing that actually matters.
     """
-
-    @pytest.fixture(scope="class")
-    def stored(self):
-        path = ROOT / "results" / "latest.json"
-        assert path.exists(), "results/latest.json is missing - run eval/run_eval.py"
-        return json.loads(path.read_text(encoding="utf-8"))
 
     def test_the_report_records_the_pinned_evaluation_date(self, stored):
         assert stored["as_of"] == run_eval.EVAL_AS_OF

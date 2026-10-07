@@ -494,13 +494,19 @@ directions, which is the only way a "not built" list stays honest.
 ```bash
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
-python scripts/kill_gate.py # 17 go/no-go checks; read this before trusting anything
-python -m pytest            # 594 tests, no network needed
-python scripts/secret_scan.py   # nothing credential-like in the tree or history
+python scripts/kill_gate.py # 18 go/no-go checks; read this before trusting anything
+python -m pytest            # 611 tests, no network needed
+python scripts/secret_scan.py   # credential scan; exit 1 on a hit, 3 if history is unreadable
 python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
 python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped
-streamlit run app/streamlit_app.py
+python scripts/serve.py     # the Streamlit demo (python -m streamlit; no shell needed)
 ```
+
+`secret_scan.py` has three outcomes, because "could not check" is not "checked
+and clean": **0** prints `RESULT: clean` (tree *and* history), **1** means
+something matched — do not push, and **3** means the tree is clean but there was
+no history to read: either you are running from the ZIP, which has no `.git`, or
+`git` is not on `PATH`. Run it from a clone for the full claim.
 
 To regenerate the screenshots in `docs/screenshots/` from a running app:
 
@@ -535,7 +541,8 @@ data/cases/      frozen_v1 (benchmark), additions (stress), categories.json
 data/records/    synthetic vendor master
 eval/            evaluation harness and reports
 app/             Streamlit demo
-scripts/         kill gate, secret audit, screenshot capture
+scripts/         kill gate, secret audit, screenshot capture,
+                 serve.py + clean.py (portable, no shell needed)
 docs/            architecture.svg, screenshots/, deployment + submission notes
 ```
 
