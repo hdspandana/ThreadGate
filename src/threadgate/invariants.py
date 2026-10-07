@@ -36,7 +36,13 @@ AI-independent evidence at all, and only the human attestation step closes it.
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 
+from .actions import (
+    find_actions,
+    has_live_change_or_routing_action,
+    live_destination_links,
+)
 from .records import Vendor, normalize_code
 from .schema import Finding
 from .tokens import Token, unique_accounts
@@ -142,37 +148,14 @@ def destination_floor(tokens: list[Token], vendor: Vendor) -> list[Finding]:
 # the vendor registered, so this is a change to be attested, not an unknown
 # destination - and it is a floor, so nothing here can lower a decision.
 
-ROUTING_ACTION = re.compile(
-    r"""
-    (?:
-        # "use this account", "use our alternate collections account"
-        \buse\s+(?:this|the|our|these|those|an|a|the\s+alternate|the\s+new|the\s+following)\b
-        (?:\s+[\w'\u2019./-]+){0,3}?\s*
-        \b(?:account|a\s*/\s*c|acct|ifsc|iban|swift|beneficiary|details?|one|number)\b
-      |
-        # "route payments to", "remit to", "send future payments to",
-        # "transfer to", "pay to", "switch to", "direct payments to"
-        \b(?:route|routing|remit|remitting|send|sending|transfer|transferring|
-           pay|paying|switch|switching|direct|directing|move|moving|
-           credit|deposit)\b
-        (?:\s+[\w'\u2019.,/-]+){0,4}?\s*
-        \b(?:to|into|towards?)\b
-    )
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
+# The routing vocabulary, the destination association and the polarity rule all
+# live in `actions.py`, and are shared with I2b and I2c so the three invariants
+# cannot disagree about what counts as an instruction.
 
-# A routing instruction the email explicitly walks back is not a routing
-# instruction. "do not use the alternate account" names every element of the
-# pattern above and asks for the opposite of what it describes.
-NEGATION_CUE = re.compile(
-    r"\b(?:not|n't|never|no\s+longer|instead\s+of|rather\s+than|avoid|"
-    r"disregard|ignore|cancel|withdraw|revert|stop|superseded)\b",
-    re.IGNORECASE,
-)
 
-# How far back to look for a negation before losing track of what it negates.
-NEGATION_WINDOW = 40
+
+
+
 
 # How far after a routing instruction a destination may be named and still be
 # the thing that instruction points at. "Route payments to X" names X
@@ -180,7 +163,6 @@ NEGATION_WINDOW = 40
 # (or long before) the instruction is not routing to it. Without this bound a
 # single sentence like "do not use the alternate account ..., continue to remit
 # to our current account ..." reads as an instruction to pay the alternate.
-ROUTING_DISTANCE = 120
 
 
 def _sentences_with_offsets(text: str) -> list[tuple[str, int, int]]:
@@ -199,12 +181,11 @@ def _sentences_with_offsets(text: str) -> list[tuple[str, int, int]]:
 
 
 def _routing_matches(sentence: str):
-    """Routing instructions in this sentence that the email does not walk back."""
-    for m in ROUTING_ACTION.finditer(sentence or ""):
-        window = sentence[max(0, m.start() - NEGATION_WINDOW) : m.start()]
-        if NEGATION_CUE.search(window):
-            continue
-        yield m
+    """Live routing/destination actions in this sentence."""
+    return [
+        a for a in find_actions(sentence)
+        if a.kind in ("transfer", "flow", "assign") and a.live
+    ]
 
 
 def actionable_routing(sentence: str) -> bool:
@@ -213,20 +194,17 @@ def actionable_routing(sentence: str) -> bool:
     True only for an instruction. A sentence that merely mentions an account,
     or that names one in order to say not to use it, is not an instruction.
     """
-    return any(True for _ in _routing_matches(sentence))
+    return bool(_routing_matches(sentence))
 
 
 def routing_instruction_ends(sentence: str) -> list[int]:
     """Offsets just past each actionable routing instruction in the sentence.
 
-    The floor needs positions, not a yes/no, because knowing that a sentence
-    contains an instruction is not the same as knowing which token the
-    instruction points at. A sentence can hold both a refused instruction and a
-    live one - "do not use the alternate account, continue to remit to our
-    current account" - and only the token that follows the live instruction is
-    the destination being routed to.
+    Kept because the floor needs positions rather than a yes/no: knowing that a
+    sentence contains an instruction is not the same as knowing which token it
+    points at.
     """
-    return [m.end() for m in _routing_matches(sentence)]
+    return [a.end for a in _routing_matches(sentence)]
 
 
 def _alternate_destination_status(tok: Token, vendor: Vendor) -> str | None:
@@ -236,7 +214,18 @@ def _alternate_destination_status(tok: Token, vendor: Vendor) -> str | None:
     destinations are I1's job and already hold; this guard must not fire on
     them, or a REVIEW finding would sit alongside the stronger HOLD.
     """
-    if tok.kind == "account":
+    # `number` is admitted alongside `account`, and that is deliberate.
+    #
+    # The token classifier is conservative about calling a long digit run an
+    # account, because invoice numbers, GSTINs and phone numbers all look like
+    # one. That conservatism is right in general and wrong here: "pay future
+    # invoices to 50100234558812" is classified `number` precisely because
+    # "invoice" is nearby, while the number is the destination.
+    #
+    # Widening the candidate set is safe because the next line is the real
+    # filter - the token has to be an account this vendor has actually pre-
+    # registered. An invoice number is not one, so it still resolves to None.
+    if tok.kind in ("account", "number"):
         status = vendor.account_status(tok.normalized)
         if status is None or status == "current":
             return None
@@ -259,54 +248,66 @@ def alternate_routing_floor(
     Lives beside the destination floor and is gated by the same ablation, so
     `hybrid_no_scan` removes it too: it is part of what the closed-world scan
     buys, not a property of the model.
+
+    The association is done by `actions.link_actions_to_destinations`, which
+    binds each action to the destination token it governs and carries that
+    action's polarity. Two properties follow that a windowed negation check
+    could not give:
+
+      - "Do not route to the old account; route future payments to ALT" still
+        flags ALT, because the negation is spent on the first clause.
+      - "Instead of the current account, route payments to ALT" still flags
+        ALT, because "Instead of" attaches to the account it names, not to the
+        routing verb that follows the comma.
     """
     findings: list[Finding] = []
-    sentences = _sentences_with_offsets(norm_text)
     seen: set[tuple[str, str]] = set()
 
-    for tok in tokens:
-        status = _alternate_destination_status(tok, vendor)
-        if status is None:
+    for sentence, s0, s1 in _sentences_with_offsets(norm_text):
+        in_sentence = [t for t in tokens if s0 <= t.start < s1]
+        if not in_sentence:
             continue
-        placed = next(
-            ((s, s0) for s, s0, s1 in sentences if s0 <= tok.start < s1), None
-        )
-        if placed is None:
-            continue
-        sentence, s0 = placed
-        # The account has to be the one the instruction points at: named after
-        # it, and soon enough after it to be the object rather than a
-        # neighbouring detail.
-        ends = [s0 + e for e in routing_instruction_ends(sentence)]
-        if not any(0 <= tok.start - e <= ROUTING_DISTANCE for e in ends):
-            continue
-        key = (tok.kind, tok.normalized)
-        if key in seen:
-            continue
-        seen.add(key)
-        findings.append(
-            Finding(
-                code="I5_ALTERNATE_DESTINATION_ROUTING",
-                # Advisory, like the reference-state finding: this says the
-                # floor is engaged, and `policy.decide` decides the consequence.
-                severity="info",
-                message=(
-                    f"{tok.kind.upper()} {tok.masked} is a pre-registered "
-                    f"{'alternate' if status == 'allowlisted' else status} for "
-                    f"{vendor.display_name}, but it is not the currently active "
-                    "destination, and this email asks for payments to be routed "
-                    "to it. A request to move money to a different destination "
-                    "is at least a REVIEW no matter how the message reads."
-                ),
-                snippet=sentence.strip()[:200],
-                span_norm=(tok.start, tok.end),
-                independent_of_model=True,
+        # Relative copies, so the action layer works in sentence coordinates
+        # and no polarity leaks across a sentence boundary.
+        relative = [
+            replace(t, start=t.start - s0, end=t.end - s0) for t in in_sentence
+        ]
+        for link in live_destination_links(sentence, relative):
+            index = next(
+                (i for i, r in enumerate(relative) if r is link.token), None
             )
-        )
+            if index is None:
+                continue
+            tok = in_sentence[index]
+            status = _alternate_destination_status(tok, vendor)
+            if status is None:
+                continue
+            key = (tok.kind, tok.normalized)
+            if key in seen:
+                continue
+            seen.add(key)
+            findings.append(
+                Finding(
+                    code="I5_ALTERNATE_DESTINATION_ROUTING",
+                    # Advisory, like the reference-state finding: this says the
+                    # floor is engaged, and `policy.decide` decides the consequence.
+                    severity="info",
+                    message=(
+                        f"{tok.kind.upper()} {tok.masked} is a pre-registered "
+                        f"{'alternate' if status == 'allowlisted' else status} for "
+                        f"{vendor.display_name}, but it is not the currently active "
+                        "destination, and this email instructs payments to be routed "
+                        "to it. A request to move money to a different destination "
+                        "is at least a REVIEW no matter how the message reads."
+                    ),
+                    snippet=sentence.strip()[:200],
+                    span_norm=(tok.start, tok.end),
+                    independent_of_model=True,
+                )
+            )
     return findings
 
 
-# Words that mean "the destination is somewhere other than this message body".
 OUT_OF_BAND = re.compile(
     r"(attach|enclos|image|scan|pdf|screenshot|photo|snapshot|jpe?g|\.png|"
     r"spreadsheet|excel|\.xlsx?|portal|download|in the file|separate file)",
@@ -403,23 +404,28 @@ def no_change_justified(quote: str) -> bool:
     passes I2 - the words really are in the email - and that variant lost 3 of
     the 12 high-risk cases in the frozen set.
 
-    So the verdict and its justification have to agree. A quote that asserts a
-    change, or merely talks about banking, does not support a claim that nothing
-    is changing, however verbatim it is.
+    So the verdict and its justification have to agree, and that is a test in
+    both directions:
+
+      1. The quote must contain a payment-domain no-change phrase. It must not
+         be retraction vocabulary, which an attacker can append to any email.
+      2. The quote must not carry a live change instruction of its own.
+
+    The second half closes the mixed sentence:
+
+        "Please update our beneficiary name; no new bank details are needed."
+
+    The second clause is a good no-change phrase and the first is a real change.
+    A model quoting the whole sentence and reporting no_change used to be
+    believed. Polarity comes from the shared action layer, so "we are not
+    changing our bank details" and "nothing is changing today" stay valid:
+    their change verb is negated.
     """
-    return bool(NO_CHANGE_PHRASE.search(quote or ""))
+    if not NO_CHANGE_PHRASE.search(quote or ""):
+        return False
+    return not has_live_change_or_routing_action(quote)
 
 
-# I2c. A quote offered for a "they are only asking us to confirm" verdict has
-# to be a request for confirmation, and not also an instruction to change
-# something.
-#
-# `confirmation_request` used to be accepted on any verbatim quote at all. It
-# was the one intent that skipped the justification check entirely, which made
-# it the cheapest route past the gate: a steered model did not have to find a
-# sentence claiming nothing was changing, only any sentence it could label as a
-# request for confirmation. Pointing it at the sentence that actually asks for
-# the change returned CLEAR, with the reason recorded as `no_change_evidenced`.
 CONFIRMATION_PHRASE = re.compile(
     r"\b(?:confirm|confirmation|verif|check|clarif|let\s+us\s+know|"
     r"as\s+per\s+your\s+records|is\s+this\s+(?:right|correct))\w*",
@@ -432,27 +438,30 @@ CONFIRMATION_PHRASE = re.compile(
 # exists to escalate and a crude detector there costs review time rather than
 # safety. Using it here would reject TG-011, whose whole content is a request to
 # confirm that the details on file are correct.
-CHANGE_DIRECTIVE = re.compile(
-    r"\b(?:updat|chang|amend|revis|replac|switch|modif|transfer|"
-    r"use\s+the\s+following|with\s+effect|w\.e\.f|effective)\w*\b",
-    re.IGNORECASE,
-)
-
-
 def confirmation_request_justified(quote: str) -> bool:
     """I2c. Does the quote ask us to confirm, without asking us to change?
 
-    Both halves matter. "Can you confirm you have our correct bank details on
-    file?" is a confirmation request and nothing else. "Please confirm you will
-    update our beneficiary name" asks for confirmation and issues a change in
-    the same breath, and the confirmation framing does not make the change go
-    away.
+    Both halves matter.
+
+    "Can you confirm you have our correct bank details on file?" is a
+    confirmation request and nothing else, and may CLEAR.
+
+    "Please confirm future payments should go to ALT", "confirm we should change
+    the payment destination to ALT" and "please confirm future payments will be
+    sent to ALT" ask for confirmation and issue an instruction in the same
+    breath. The confirmation framing does not make the instruction go away, and
+    treating these as confirmation of the *current* destination would let a
+    steered model relabel a routing request and clear it.
+
+    The instruction test is the same shared action layer I5 uses, so the two
+    cannot disagree: if the floor would flag the destination, the confirmation
+    verdict is not accepted either.
     """
     if not (quote or "").strip():
         return False
     if not CONFIRMATION_PHRASE.search(quote):
         return False
-    return not (CHANGE_DIRECTIVE.search(quote) and ENTITY_WORD.search(quote))
+    return not has_live_change_or_routing_action(quote)
 
 
 def change_act_detected(norm_text: str) -> bool:
