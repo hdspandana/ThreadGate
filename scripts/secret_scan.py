@@ -46,7 +46,7 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 
 # Files that legitimately mention key names without holding one.
 ALLOWLIST_SUFFIXES = {".md", ".example", ".txt", ".ini", ".toml"}
-SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", "node_modules", "results", "data/runs"}
+SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", "node_modules", "results", "data/runs"}
 
 # A placeholder is fine; a real value is not.
 PLACEHOLDER = re.compile(r"(your[-_]?key[-_]?here|xxxx+|placeholder|changeme|<[a-z_]+>)", re.IGNORECASE)
