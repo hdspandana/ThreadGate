@@ -92,6 +92,85 @@ mark.intent {background:#dbe7ff;}
 table.tg {width:100%; border-collapse:collapse; font-size:13px;}
 table.tg th, table.tg td {border:1px solid #e3e6ea; padding:6px 8px; text-align:left;}
 table.tg th {background:#f4f6f8;}
+
+.destination-panel {
+  background: #f8fafc;
+  border: 1px solid #d6deea;
+  border-left: 5px solid #37507a;
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin: 22px 0 30px 0;
+  box-shadow: 0 2px 8px rgba(15, 31, 58, 0.04);
+}
+
+.destination-kicker {
+  color: #526783;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  margin-bottom: 7px;
+}
+
+.destination-heading {
+  color: #14213d;
+  font-size: 22px;
+  font-weight: 750;
+  line-height: 1.3;
+  margin-bottom: 14px;
+}
+
+.destination-panel table.tg {
+  background: white;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #d9e1eb;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.destination-panel table.tg th {
+  background: #e9eef5;
+  color: #1b2c49;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-color: #d9e1eb;
+}
+
+.destination-panel table.tg td {
+  padding: 13px 14px;
+  border-color: #e1e7ef;
+  vertical-align: middle;
+}
+
+.destination-panel table.tg tr:last-child td {
+  border-bottom: none;
+}
+
+.destination-panel .small {
+  color: #53647b;
+}
+
+@media (max-width: 768px) {
+  .destination-panel {
+    padding: 14px;
+    margin: 16px 0 22px 0;
+  }
+
+  .destination-heading {
+    font-size: 19px;
+  }
+
+  .destination-panel table.tg {
+    font-size: 12px;
+  }
+
+  .destination-panel table.tg th,
+  .destination-panel table.tg td {
+    padding: 8px 7px;
+    overflow-wrap: anywhere;
+  }
+}
 </style>
 """
 
@@ -283,6 +362,17 @@ def render(result, baseline_decision: str) -> None:
         f"rules-only baseline says **{baseline_decision}**"
     )
 
+    st.markdown(
+        "<section class='destination-panel'>"
+        "<div class='destination-kicker'>DESTINATION CHECK</div>"
+        "<div class='destination-heading'>"
+        "Requested destination vs. trusted record"
+        "</div>"
+        f"{diff_table(result)}"
+        "</section>",
+        unsafe_allow_html=True,
+    )
+
     left, right = st.columns([3, 2])
     with left:
         st.subheader("The email")
@@ -334,8 +424,6 @@ def render(result, baseline_decision: str) -> None:
                 f"`{result.verification.destination_digest[:16]}…`"
             )
 
-        st.markdown("#### Diff against the record")
-        st.markdown(diff_table(result), unsafe_allow_html=True)
 
         if result.decision.findings:
             st.markdown("#### Findings")
@@ -392,13 +480,11 @@ export_key_to_environment()
 
 st.title("ThreadGate")
 st.markdown(
-    "**AI interprets the email. Code verifies the change against the record. "
-    "A human attests before anything executes.**"
+    "**AI interprets. Deterministic code verifies. A human attests before execution.**"
 )
-st.markdown(
-    "AI-written payment-change mail is fluent, so judging the *wording* gets weaker every year. "
-    "Judging the *requested change against the record* does not depend on how good the writing is. "
-    "ThreadGate gates the action, not the prose."
+st.caption(
+    "Payment-change requests are checked against the trusted vendor record—not "
+    "judged by how convincing the email sounds."
 )
 
 configured, status = key_status()
