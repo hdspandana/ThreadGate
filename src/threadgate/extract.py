@@ -193,6 +193,50 @@ def _is_timeout(exc: Exception) -> bool:
     return "timeout" in str(exc).lower() or "deadline" in str(exc).lower()
 
 
+def _http_status_code(exc: Exception) -> int | None:
+    """Return an HTTP status when the SDK exception exposes one."""
+    value = getattr(exc, "code", None)
+    if value is None:
+        value = getattr(exc, "status_code", None)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_non_retryable(exc: Exception) -> bool:
+    """Do not retry permanent client errors; retain retries for transient statuses."""
+    code = _http_status_code(exc)
+    return (
+        code is not None
+        and 400 <= code < 500
+        and code not in {408, 409, 425, 429}
+    )
+
+
+def _gemini_config(types, model: str, timeout_ms: int):
+    """Build a model-compatible request config with a bounded HTTP timeout."""
+    common = {
+        "max_output_tokens": 4096,
+        "response_mime_type": "application/json",
+        "response_schema": Extraction,
+        "system_instruction": PRODUCTION_SYSTEM_PROMPT,
+        "http_options": types.HttpOptions(timeout=timeout_ms),
+    }
+    if model.startswith("gemini-3"):
+        return types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(
+                thinking_level=types.ThinkingLevel.LOW,
+            ),
+            **common,
+        )
+    return types.GenerateContentConfig(
+        temperature=0.0,
+        top_p=0.0,
+        **common,
+    )
+
+
 def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
     """The gate's interpretation step. Receives the email and nothing else.
 
@@ -246,14 +290,7 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
         client = genai.Client(
             api_key=api_key, http_options={"timeout": timeout_ms}
         )
-    config = types.GenerateContentConfig(
-        temperature=0.0,
-        top_p=0.0,
-        max_output_tokens=4096,
-        response_mime_type="application/json",
-        response_schema=Extraction,
-        system_instruction=PRODUCTION_SYSTEM_PROMPT,
-    )
+
 
     # An end-to-end budget, separate from the per-request timeout.
     #
@@ -275,11 +312,18 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
                 f"the model run exceeded its {budget_ms}ms end-to-end budget "
                 f"after {attempt} attempt(s)"
             )
+        attempt_timeout_ms = max(1, min(timeout_ms, int(remaining * 1000)))
+        attempt_started = time.monotonic()
         try:
             resp = client.models.generate_content(
                 model=model,
                 contents=build_production_prompt(nt),
-                config=config,
+                config=_gemini_config(types, model, attempt_timeout_ms),
+            )
+            logging.info(
+                "Gemini attempt %d/3 returned a response in %.0fms",
+                attempt + 1,
+                (time.monotonic() - attempt_started) * 1000,
             )
             if getattr(resp, "parsed", None) is not None:
                 return Extraction.model_validate(resp.parsed)
@@ -290,6 +334,17 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
             return Extraction.model_validate_json(text)
         except Exception as exc:  # noqa: BLE001 - surface after retries
             last_err = exc
+            logging.warning(
+                "Gemini attempt %d/3 failed in %.0fms (%s)",
+                attempt + 1,
+                (time.monotonic() - attempt_started) * 1000,
+                type(exc).__name__,
+            )
+            if _is_non_retryable(exc):
+                status = _http_status_code(exc)
+                raise ExtractorError(
+                    f"Gemini rejected the request (HTTP {status}); not retried"
+                ) from exc
             # Never sleep past the budget: the backoff is here to ride out a
             # transient failure, and waiting out a backoff that outlives the
             # budget only delays the answer the caller is already owed.

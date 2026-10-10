@@ -171,6 +171,7 @@ def test_the_prompt_sent_to_the_api_carries_no_record(monkeypatch):
     # A fake key: this test is about what goes in the request, not about auth.
     monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-real")
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.setenv("THREADGATE_MODEL", "gemini-3.8-flash")
 
     captured: dict = {}
 
@@ -183,6 +184,7 @@ def test_the_prompt_sent_to_the_api_carries_no_record(monkeypatch):
             captured["contents"] = contents
             captured["system"] = getattr(config, "system_instruction", None)
             captured["schema"] = getattr(config, "response_schema", None)
+            captured["config"] = config
             return _Resp()
 
     class _Client:
@@ -194,6 +196,11 @@ def test_the_prompt_sent_to_the_api_carries_no_record(monkeypatch):
         # staticmethod: as a plain class attribute this would be bound as a
         # method and receive `self` as a phantom first positional argument.
         GenerateContentConfig = staticmethod(lambda **kw: type("C", (), kw))
+        HttpOptions = staticmethod(lambda **kw: type("H", (), kw))
+        ThinkingConfig = staticmethod(lambda **kw: type("T", (), kw))
+
+        class ThinkingLevel:
+            LOW = "low"
 
     import types as pytypes
     fake_genai = pytypes.ModuleType("google.genai")
@@ -217,6 +224,14 @@ def test_the_prompt_sent_to_the_api_carries_no_record(monkeypatch):
         gemini_extract(nt, vendor=vendor)
     gemini_extract(nt)
 
+    assert captured["config"].thinking_config.thinking_level == "low"
+    assert not hasattr(captured["config"], "temperature")
+    assert not hasattr(captured["config"], "top_p")
+    assert captured["config"].http_options.timeout == 30000
+    assert extract_mod._is_non_retryable(type("HttpError", (), {"code": 400})())
+    assert extract_mod._is_non_retryable(type("HttpError", (), {"code": 403})())
+    assert not extract_mod._is_non_retryable(type("HttpError", (), {"code": 429})())
+    assert not extract_mod._is_non_retryable(type("HttpError", (), {"code": 503})())
     assert SECRET not in captured["contents"]
     assert SECRET not in str(captured["system"])
     assert captured["system"] == PRODUCTION_SYSTEM_PROMPT
