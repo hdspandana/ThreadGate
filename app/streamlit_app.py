@@ -201,18 +201,23 @@ def key_status() -> tuple[bool, str]:
 
 
 def export_key_to_environment() -> None:
-    """Make a Streamlit secret visible to the pipeline.
+    """Expose configured Streamlit secrets to the extractor process."""
+    key = api_key()
+    if key and not (
+        os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+    ):
+        os.environ["GEMINI_API_KEY"] = key
 
-    Community Cloud keeps secrets in `st.secrets` and does not inject them into
-    `os.environ`, but the extractor reads `os.environ`. Without this, a
-    deployment with the key correctly configured would still raise
-    ExtractorError on every case - failing closed to HOLD, with empty model rows
-    - while the sidebar cheerfully reported "configured". The key is only ever
-    copied into this process's environment; it is never logged or displayed.
-    """
-    k = api_key()
-    if k and not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
-        os.environ["GEMINI_API_KEY"] = k
+    # Streamlit Cloud secrets are not automatically environment variables.
+    try:
+        configured_model = st.secrets.get("THREADGATE_MODEL")
+    except Exception:
+        configured_model = None
+
+    # Preserve a model already configured in the local environment.
+    if configured_model and not os.environ.get("THREADGATE_MODEL"):
+        os.environ["THREADGATE_MODEL"] = str(configured_model)
 
 
 # ---------------------------------------------------------------------------
