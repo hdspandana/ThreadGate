@@ -8,6 +8,7 @@ separators, case, currency symbols) so that "5010 0234 5598 21" and
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from .records import Vendor
 from .schema import FieldDiff
@@ -46,6 +47,13 @@ def normalize_value(field: str, value: str | None) -> str:
     if value is None:
         return ""
     v = str(value).strip()
+    if field == "account_number":
+        # Presentation separators may be removed; letters must never disappear
+        # and turn a malformed/different identifier into the trusted account.
+        folded=unicodedata.normalize('NFKC',v)
+        compact=re.sub(r'[\s.\-_/]','',folded)
+        digits=''.join(str(unicodedata.decimal(c)) if c.isdecimal() else c for c in compact)
+        return digits if digits.isascii() and digits.isdigit() else 'invalid:'+digits
     if field in NUMERIC:
         return re.sub(r"[^\d]", "", v)
     if field in CODE:

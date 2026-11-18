@@ -121,6 +121,7 @@ def event_for(context, event_id="EV-1", **overrides):
         request_id=context.request_id,
         destination_digest=context.destination_digest,
         reference_version=context.reference_version,
+        request_digest=context.request_digest, reference_digest=context.reference_digest,
     )
     fields.update(overrides)
     return VerificationEvent(**fields)

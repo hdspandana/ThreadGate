@@ -10,6 +10,9 @@ text; everything after it refuses to trust the model.
 from __future__ import annotations
 
 import time
+import hashlib
+import json
+import re
 from dataclasses import dataclass, field
 
 from .attestation import (
@@ -25,6 +28,7 @@ from .compare import diff_claims
 from .extract import _call_extractor, get_extractor
 from .normalize import NormalizedText, normalize_text
 from .policy import decide
+from .provider_observation import capture, error_kind
 from .records import Vendor
 from .reference import reference_version
 from .schema import Decision, Extraction, Finding
@@ -61,6 +65,8 @@ class PipelineResult:
     expected: str | None = None
     notes: list[str] = field(default_factory=list)
     error: str | None = None
+    error_kind: str | None = None
+    provider_events: list[dict] = field(default_factory=list)
     # What this request is bound to, and where the human-verification step stands.
     verification: VerificationContext | None = None
     attestation: AttestationState | None = None
@@ -151,23 +157,42 @@ def run_case(
     release a hold nor manufacture a clear.
     """
     started = time.perf_counter()
-    vendor = vendors[case["vendor_id"]]
+    case = dict(case)
+    if not isinstance(case.get("email"), dict) or not isinstance(case["email"].get("body", ""), str):
+        raise ValueError("Email must be an object with a text body.")
+    if len(email_to_text(case["email"])) > 22000:
+        raise ValueError("Email exceeds the bounded analysis input size.")
+    vendor_id = str(case.get("vendor_id") or "unknown")
+    missing_vendor = vendor_id not in vendors
+    vendor = vendors.get(vendor_id) or Vendor({"vendor_id":vendor_id})
+    for header in ('from','reply_to','subject','received_at'):
+        if header in case['email'] and not isinstance(case['email'][header],str):
+            raise ValueError('Email header values must be strings.')
     raw = email_to_text(case["email"])
     nt = normalize_text(raw)
     tokens = find_tokens(nt)
+    case["id"] = request_id_for(case, nt.text)
 
     error: str | None = None
     notes: list[str] = []
 
     extract = extractor_fn or get_extractor(extractor_mode)
-    try:
-        # `_call_extractor` passes a production model extractor the email and
-        # nothing else; test doubles and adversarial harnesses also get the
-        # record, because simulating a reading of it is what they are for.
-        extraction = _call_extractor(extract, nt, vendor)
-    except Exception as exc:  # noqa: BLE001
-        error = f"extractor_error: {exc}"
-        extraction = Extraction(intent="unverifiable", intent_evidence="", summary=error)
+    failure_kind = None
+    with capture() as observations:
+        try:
+            # `_call_extractor` passes a production model extractor the email and
+            # nothing else; test doubles and adversarial harnesses also get the
+            # record, because simulating a reading of it is what they are for.
+            extraction = _call_extractor(extract, nt, vendor)
+            # Validate at the adapter boundary as well as inside the SDK parser.
+            # None/dicts/constructed invalid models must become fail-closed schema
+            # failures, not exceptions later in validation or trusted objects.
+            extraction = Extraction.model_validate(extraction.model_dump(warnings=False)
+                if isinstance(extraction,Extraction) else extraction)
+        except Exception as exc:  # noqa: BLE001
+            failure_kind = error_kind(exc)
+            error = f"extractor_error: {type(exc).__name__}"
+            extraction = Extraction(intent="unverifiable", intent_evidence="", summary=error)
 
     # Ablation F: skip the closed-world check and admit everything the model
     # produced. Evaluation only - the product path never sets an ablation.
@@ -192,6 +217,20 @@ def run_case(
         decision.attestation_required = True
         decision.attestation_status = "PENDING"
 
+    malformed = re.search(r'(?i)account(?:\s+number)?\s*[:=]\s*([A-Za-z0-9]{8,34})(?![A-Za-z0-9])',nt.text)
+    if malformed and any(c.isalpha() for c in malformed.group(1)) and any(c.isdigit() for c in malformed.group(1)):
+        decision.decision = "HOLD"
+        decision.attestation_required = True
+        decision.reasons.append("malformed_destination_identifier")
+        decision.findings.append(Finding(code="I_MALFORMED_ACCOUNT",severity="hold",
+            message="An account-labelled identifier mixes letters and digits; do not repair it silently.",independent_of_model=True))
+    if missing_vendor:
+        decision.decision = "HOLD"
+        decision.attestation_required = True
+        decision.reasons.append("trusted_vendor_unavailable")
+        decision.findings.append(Finding(code="R_VENDOR_UNAVAILABLE",severity="hold",
+            message="Trusted vendor identity/record is unavailable. Resolve identity independently.",independent_of_model=True))
+
     # --- what an attestation would have to be bound to --------------------
     # Derived by code from the diff and from the record on file. The model's
     # description of the destination is deliberately not an input: a binding the
@@ -201,6 +240,8 @@ def run_case(
         request_id=request_id_for(case, nt.text),
         destination_digest=destination_digest(diffs, vendor),
         reference_version=reference_version(vendor),
+        request_digest=hashlib.sha256(raw.encode()).hexdigest(),
+        reference_digest=hashlib.sha256(json.dumps(vendor.data,sort_keys=True,separators=(",",":"),ensure_ascii=True).encode()).hexdigest(),
     )
     attestation = AttestationState(context=context)
 
@@ -245,6 +286,8 @@ def run_case(
         expected=case.get("expected_decision"),
         notes=notes,
         error=error,
+        error_kind=failure_kind,
+        provider_events=observations,
         verification=context,
         attestation=attestation,
     )

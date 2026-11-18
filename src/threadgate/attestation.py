@@ -4,19 +4,13 @@ A decision is not the end of the control: once the gate says REVIEW or HOLD, a
 human has to verify the change out of band and attest that they did. This
 module makes that attestation a *verifiable object* rather than a tick box.
 
-A verification event is bound to four things, and is refused if any one of them
-does not match the request it is presented against:
-
-    request_id          - the specific request it was minted for
-    destination_digest  - the destination that was verified, not merely "a change"
-    reference_version   - the version of the record the human checked against
-    verification_event_id - itself, so it can only ever be used once
-
-The fourth binding is what makes it single-use. The third is what stops a
-verification made against v1 of a vendor record from being replayed after the
-record moves to v2: the record changed, so the old verification no longer
-describes it, and inheriting it would let a change slip through on the strength
-of a check that was never performed against the new destination.
+New pipeline events bind six current-context fields: vendor_id, request_id,
+destination_digest, reference_version, request_digest (full raw source), and
+reference_digest (complete canonical record). A unique verification_event_id is
+also consumed once. Same-version reference edits and reused request identifiers
+therefore cannot inherit a new pipeline verification. Legacy manually constructed
+four-field contexts/events remain constructible for library compatibility;
+persisted legacy workspace cases must be reinvestigated before verification.
 
 What this is NOT: there is no signature, no key material and no certificate.
 None of this is cryptographic proof that a particular human did a particular
@@ -102,6 +96,8 @@ class VerificationContext:
     request_id: str
     destination_digest: str
     reference_version: str
+    request_digest: str = ""
+    reference_digest: str = ""
 
 
 @dataclass(frozen=True)
@@ -119,6 +115,8 @@ class VerificationEvent:
     reference_version: str
     attested_by: str = ""
     attested_at: str = ""
+    request_digest: str = ""
+    reference_digest: str = ""
 
     @property
     def binding(self) -> tuple[str, str, str, str]:
@@ -213,6 +211,11 @@ class AttestationStore:
                 "verification no longer describes it and a new one is required.",
                 consumed=True,
             )
+
+        for binding_field, code in (("request_digest", "ATTESTATION_SOURCE_MISMATCH"),
+                            ("reference_digest", "ATTESTATION_REFERENCE_CONTENT_MISMATCH")):
+            if getattr(context, binding_field) != getattr(event, binding_field):
+                return AttestationOutcome(False, code, "Verification content binding changed; repeat verification.", True)
 
         return AttestationOutcome(
             True, ACCEPTED,

@@ -76,6 +76,7 @@ def test_the_single_use_binding_still_refuses_a_replay():
         request_id=ctx.request_id,
         destination_digest=ctx.destination_digest,
         reference_version=ctx.reference_version,
+        request_digest=ctx.request_digest, reference_digest=ctx.reference_digest,
     )
     first = run_case(case, VENDORS, extractor_fn=offline_extract, clock=CLOCK,
                      store=store, presented_event=event)

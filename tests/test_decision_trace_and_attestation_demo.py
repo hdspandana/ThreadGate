@@ -136,6 +136,7 @@ def _event(ctx) -> VerificationEvent:
         request_id=ctx.request_id,
         destination_digest=ctx.destination_digest,
         reference_version=ctx.reference_version,
+        request_digest=ctx.request_digest, reference_digest=ctx.reference_digest,
         attested_by="demo",
     )
 

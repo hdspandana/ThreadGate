@@ -102,12 +102,13 @@ def reference_state(vendor: Vendor, clock=None) -> ReferenceState:
     destination on file cannot be "stale but usable", because there is nothing
     usable on it. Freshness is then evaluated, and an *absent* confirmation
     date is treated as stale - an unrecorded date is not proof of recency, and
-    assuming otherwise would let a record be current by omission.
+    assuming otherwise would let a record be current by omission. Future dates
+    are also STALE (not current evidence): the inclusive valid age is 0..window.
     """
     if not has_destination_on_file(vendor):
         return "MISSING"
     age = reference_age_days(vendor, clock)
-    if age is None or age > reference_freshness_days(vendor):
+    if age is None or age < 0 or age > reference_freshness_days(vendor):
         return "STALE"
     return "CURRENT"
 
@@ -124,12 +125,18 @@ def reference_finding(state: ReferenceState, vendor: Vendor, age: int | None,
             "released on the strength of this record."
         )
     else:
-        when = f"last confirmed {age} days ago" if age is not None else "never confirmed"
-        message = (
-            f"The record on file for {vendor.display_name} was {when}, past the "
-            f"{reference_freshness_days(vendor)}-day confirmation window. It is not "
-            "treated as current evidence of the destination."
-        )
+        if age is not None and age < 0:
+            message = (
+                f"The confirmation date for {vendor.display_name} is in the future. "
+                "It cannot establish a current trusted reference."
+            )
+        else:
+            when = f"last confirmed {age} days ago" if age is not None else "never confirmed"
+            message = (
+                f"The record on file for {vendor.display_name} was {when}, past the "
+                f"{reference_freshness_days(vendor)}-day confirmation window. It is not "
+                "treated as current evidence of the destination."
+            )
     return Finding(
         code=f"R_{state}_REFERENCE",
         severity="hold" if forces_hold else "info",

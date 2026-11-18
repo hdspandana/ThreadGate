@@ -26,6 +26,8 @@ Extractors are provided:
 
 from __future__ import annotations
 
+from .provider_observation import observe
+
 import logging
 import os
 import re
@@ -320,6 +322,7 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
                 contents=build_production_prompt(nt),
                 config=_gemini_config(types, model, attempt_timeout_ms),
             )
+            observe(attempt+1,"response",(time.monotonic()-attempt_started)*1000,response=resp)
             logging.info(
                 "Gemini attempt %d/3 returned a response in %.0fms",
                 attempt + 1,
@@ -334,6 +337,7 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
             return Extraction.model_validate_json(text)
         except Exception as exc:  # noqa: BLE001 - surface after retries
             last_err = exc
+            observe(attempt+1,"error",(time.monotonic()-attempt_started)*1000,error=exc)
             logging.warning(
                 "Gemini attempt %d/3 failed in %.0fms (%s)",
                 attempt + 1,
@@ -355,9 +359,9 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
                 # would make the gate weaker on exactly the cases where the
                 # model is slowest to answer.
                 raise ModelTimeoutError(
-                    f"the model did not respond within {timeout_ms}ms: {exc}"
+                    f"the model did not respond within {timeout_ms}ms ({type(exc).__name__})"
                 ) from exc
-    raise ExtractorError(f"Gemini call failed after retries: {last_err}")
+    raise ExtractorError(f"Gemini call failed after retries ({type(last_err).__name__})") from last_err
 
 
 # ---------------------------------------------------------------------------
@@ -430,7 +434,8 @@ def ai_only_decide(nt: NormalizedText, vendor: Vendor, model: str | None = None)
         logging.getLogger(name).setLevel(logging.ERROR)
 
     model = model or os.environ.get("THREADGATE_MODEL", "gemini-2.5-flash")
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(
+        timeout=int(os.environ.get("THREADGATE_HTTP_TIMEOUT_MS", "30000"))))
     config = types.GenerateContentConfig(
         temperature=0.0,
         top_p=0.0,
