@@ -3,9 +3,8 @@
 # The submission is evaluated from a ZIP unpacked on Windows as often as from a
 # clone on Linux. Without this, a Windows checkout with core.autocrlf=true
 # rewrites every text file to CRLF and the next diff shows the whole repository
-# as changed. Nothing in the suite compares raw bytes, so this is hygiene rather
-# than a fix - but it is the kind of hygiene that costs nothing here and is
-# annoying to discover late.
+# as changed. Release verification now compares archive bytes to committed blobs;
+# declared LF endings keep that correspondence stable across platforms.
 * text=auto eol=lf
 
 # The launchers are run by their own interpreter or by Git Bash; the executable

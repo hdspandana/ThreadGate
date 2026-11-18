@@ -29,3 +29,19 @@ app:             ## Streamlit demo
 
 clean:           ## remove caches and scratch run output (portable; no rm/find)
 	$(PYTHON) scripts/clean.py
+
+.PHONY: ready doctor live-check live-accept package
+ready:          ## complete offline release checks (from a Git clone)
+	$(PYTHON) scripts/release_check.py --require-history
+
+doctor:
+	$(PYTHON) scripts/doctor.py
+
+live-check:     ## opt-in: three synthetic live Gemini requests
+	$(PYTHON) scripts/live_check.py
+
+live-accept:    ## inspect completed full live evaluation
+	$(PYTHON) scripts/check_live_report.py
+
+package:
+	$(PYTHON) scripts/package_release.py

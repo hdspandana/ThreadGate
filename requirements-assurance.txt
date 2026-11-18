@@ -1,0 +1,4 @@
+# Optional assurance tools; not part of the application runtime.
+# Advisory database access is a network operation. No provider calls.
+pip-audit==2.10.1
+pyflakes==4.0.3

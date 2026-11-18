@@ -1,4 +1,6 @@
-# Pinned to the combination the suite was actually run against, not to whatever
+# Compatibility ranges; requirements.lock records the clean Linux/Python 3.13
+# installation tested for the current release. These ranges are not an exact lock.
+# Pinned lower bounds refer to the original upstream combination, not to whatever
 # happens to be current. The lower bound is the tested version, so an install
 # cannot silently resolve below something that was verified; the upper bound is
 # the next major version, so a breaking release cannot arrive unannounced.
@@ -12,8 +14,14 @@ python-dotenv>=1.2.4,<2          # local .env only; deployments use st.secrets
 google-genai>=2.28.0,<3          # the only model SDK in the project
 
 # --- interface -------------------------------------------------------------
-streamlit>=1.65.0,<2             # demo UI; Community Cloud is the only host
+streamlit>=1.65.0,<2             # authenticated product UI and separate synthetic demo
+
+# Distribution/Compose policy parser (also needed before CI preflight).
+PyYAML>=6.0.3,<7
 
 # --- evaluation and development -------------------------------------------
 pytest>=9.0.3,<10
 rich>=15.0.0,<16
+
+# optional account MFA (implemented using TOTP)
+pyotp>=2.9.0,<3

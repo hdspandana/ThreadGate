@@ -1,0 +1,2 @@
+# Optional real-browser regression dependency; runtime lock stays separate.
+playwright==1.64.1

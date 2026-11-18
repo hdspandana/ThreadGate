@@ -70,7 +70,7 @@ def scan_text(text: str, location: str) -> list[tuple[str, str, str]]:
     return hits
 
 
-def scan_working_tree() -> list[tuple[str, str, str]]:
+def scan_working_tree(allow_local_secrets=False) -> list[tuple[str, str, str]]:
     hits: list[tuple[str, str, str]] = []
     for path in ROOT.rglob("*"):
         if not path.is_file():
@@ -78,6 +78,18 @@ def scan_working_tree() -> list[tuple[str, str, str]]:
         rel = path.relative_to(ROOT)
         if any(part in SKIP_DIRS for part in rel.parts):
             continue
+        if allow_local_secrets and (str(rel) == '.env' or str(rel) == '.streamlit/secrets.toml'):
+            # Only explicitly requested, Git-ignored AND untracked local secrets
+            # may be skipped. History remains fully scanned, including deletions.
+            try:
+                tracked = subprocess.run(['git','ls-files','--error-unmatch',str(rel)],cwd=ROOT,capture_output=True).returncode == 0
+                ignored = subprocess.run(['git','check-ignore','-q','--',str(rel)],cwd=ROOT,capture_output=True).returncode == 0
+            except OSError:
+                tracked,ignored = True,False
+            rules = (ROOT / '.gitignore').read_text().splitlines() if (ROOT / '.gitignore').exists() else []
+            zip_local = not (ROOT / '.git').exists() and str(rel) in rules
+            if not tracked and (ignored or zip_local):
+                continue
         if rel.name.startswith(".env") and rel.suffix not in ALLOWLIST_SUFFIXES:
             hits.append(("env-file-present", str(rel), "a .env file exists and would be committed"))
         if rel.name == "secrets.toml":
@@ -181,8 +193,8 @@ HISTORY_REASONS = {
 }
 
 
-def main() -> int:
-    tree_hits = scan_working_tree()
+def main(allow_local_secrets=False) -> int:
+    tree_hits = scan_working_tree(allow_local_secrets=True) if allow_local_secrets else scan_working_tree()
     history_hits, history_status = scan_history()
     history_scanned = history_status == "scanned"
 
@@ -224,4 +236,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--allow-local-secrets',action='store_true',help='exclude ONLY Git-ignored, untracked .env and .streamlit/secrets.toml; still scan history')
+    raise SystemExit(main(parser.parse_args().allow_local_secrets))

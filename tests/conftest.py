@@ -83,3 +83,19 @@ def case_by_id_all(cases_all):
 @pytest.fixture(scope="session")
 def vendor(vendors):
     return vendors["V-1001"]
+
+
+@pytest.fixture(autouse=True)
+def _isolate_local_api_secrets(monkeypatch):
+    """A developer's .env or cloud key must never make this suite spend credits.
+
+    Mocked provider tests explicitly set their own throwaway key after this
+    fixture. Configuration-loading tests explicitly opt into temporary .env files.
+    """
+    monkeypatch.delenv('GEMINI_API_KEY',raising=False)
+    monkeypatch.delenv('GOOGLE_API_KEY',raising=False)
+    monkeypatch.setenv('THREADGATE_SKIP_DOTENV','1')
+    # Deployment policy/model choices must not change the baseline test setup.
+    # Dedicated tests explicitly override these to exercise required MFA/config.
+    monkeypatch.setenv('THREADGATE_REQUIRE_MFA','0')
+    monkeypatch.setenv('THREADGATE_MODEL','gemini-2.5-flash')

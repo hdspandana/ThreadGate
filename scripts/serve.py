@@ -27,8 +27,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-APP = ROOT / "app" / "streamlit_app.py"
-REQUIREMENTS = ROOT / "requirements.txt"
+APP = ROOT / "app" / "product.py"
+REQUIREMENTS = ROOT / "requirements.lock"
 
 
 def streamlit_available() -> bool:
@@ -50,18 +50,19 @@ def main() -> int:
     ap.add_argument("--address", default="0.0.0.0")
     ap.add_argument("--no-install", action="store_true",
                     help="fail instead of installing missing dependencies")
+    ap.add_argument("--demo", action="store_true", help="open the unauthenticated synthetic demo instead of the team workspace")
     args = ap.parse_args()
 
     if not streamlit_available():
         if args.no_install:
             print("streamlit is not installed; run: "
-                  f"{Path(sys.executable).name} -m pip install -r requirements.txt",
+                  f"{Path(sys.executable).name} -m pip install -r requirements.lock",
                   file=sys.stderr)
             return 1
         install_requirements()
 
     cmd = [
-        sys.executable, "-m", "streamlit", "run", str(APP),
+        sys.executable, "-m", "streamlit", "run", str(ROOT / "app" / "workbench.py" if args.demo else APP),
         "--server.address", args.address,
         "--server.port", str(args.port),
         "--server.headless", "true",

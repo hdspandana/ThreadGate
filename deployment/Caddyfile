@@ -1,0 +1,10 @@
+{$THREADGATE_DOMAIN} {
+    encode zstd gzip
+    header {
+        -Server
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        Content-Security-Policy "frame-ancestors 'self'"
+    }
+    reverse_proxy app:8501
+}

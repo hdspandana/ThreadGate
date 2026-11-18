@@ -1,0 +1,23 @@
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8501:8501"
+    environment:
+      THREADGATE_WORKSPACE_DB: /data/workspace.sqlite3
+      THREADGATE_REQUIRE_MFA: ${THREADGATE_REQUIRE_MFA:-0}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      THREADGATE_MODEL: ${THREADGATE_MODEL:-gemini-2.5-flash}
+    volumes:
+      - workspace:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  workspace:

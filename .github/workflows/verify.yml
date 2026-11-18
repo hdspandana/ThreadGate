@@ -1,0 +1,139 @@
+name: Verify ThreadGate
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_live:
+        description: 'Spend API credits: smoke first, then development evaluation'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+env:
+  EXPECTED_SHA: ${{ github.sha }}
+  REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+  PIP_NO_CACHE_DIR: "1"
+  PYTEST_ADDOPTS: "-o tmp_path_retention_count=0 -o tmp_path_retention_policy=none"
+  THREADGATE_SKIP_DOTENV: "1"
+jobs:
+  offline-verification:
+    needs: [container-smoke, browser-regression]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+      - run: python -B scripts/ci_guard.py capacity
+      - run: python -B scripts/ci_guard.py run python -m pip install --no-cache-dir --no-deps PyYAML==6.0.3
+      - run: python3 -B scripts/ci_guard.py preflight
+      - run: python -B scripts/ci_guard.py run python -m pip install --no-cache-dir -r requirements.lock
+      - name: Advisory and static checks (tools isolated from runtime)
+        run: |
+          python -B scripts/ci_guard.py capacity
+          mkdir -p data/runs/release-check
+          python -m venv /tmp/threadgate-audit
+          /tmp/threadgate-audit/bin/pip install --no-cache-dir -r requirements-assurance.txt
+          /tmp/threadgate-audit/bin/python -m pip_audit -r requirements.lock --disable-pip --no-deps --format json --output data/runs/release-check/dependency-audit.json
+          /tmp/threadgate-audit/bin/python -m pyflakes src app scripts eval
+      - run: python -B scripts/ci_guard.py capacity
+      - run: python -B scripts/ci_guard.py run python scripts/release_check.py --require-history
+      - run: python -B scripts/ci_guard.py run python scripts/verify_release.py --require-commit
+      - run: python -B scripts/ci_guard.py run python scripts/ci_guard.py fresh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: success() && vars.THREADGATE_ARTIFACT_UPLOAD_APPROVED == 'true'
+        with:
+          name: ThreadGate-validated-source
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            release/ThreadGate-TeamWorkspace.zip
+            release/TeamWorkspace-manifest.json
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+      - run: python -B scripts/ci_guard.py capacity
+      - run: python -B scripts/ci_guard.py run python -m pip install --no-cache-dir --no-deps PyYAML==6.0.3
+      - run: python3 -B scripts/ci_guard.py preflight
+      - run: docker compose config --quiet
+      - run: THREADGATE_DOMAIN=example.test docker compose -f compose.yaml -f deployment/compose.public.yaml config --quiet
+      - run: python3 -B scripts/ci_guard.py capacity
+      - run: python3 -B scripts/ci_guard.py docker-build -t threadgate:ci .
+      - name: Validate persistence and accounts inside hardened container
+        run: |
+          docker run --rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges --mount type=volume,dst=/data threadgate:ci python -c "import secrets,sys;sys.path.insert(0,'src');from threadgate.workspace import Workspace;s=Workspace('/data/workspace.sqlite3');p=secrets.token_urlsafe(32);s.bootstrap('ci-owner',p);assert s.principal(s.login('ci-owner',p)).role=='admin';print('Container storage and identity smoke passed')"
+      - name: Validate Streamlit health
+        run: |
+          docker run -d --name threadgate-smoke --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges --mount type=volume,dst=/data threadgate:ci
+          python - <<'PY'
+          import subprocess,time
+          deadline=time.monotonic()+120
+          while time.monotonic()<deadline:
+              state=subprocess.check_output(['docker','inspect','--format','{{.State.Health.Status}}','threadgate-smoke'],text=True).strip()
+              if state=='healthy':
+                  break
+              if state=='unhealthy':
+                  raise SystemExit('Container unhealthy')
+              time.sleep(2)
+          else:
+              raise SystemExit('Container health deadline exceeded')
+          PY
+      - run: docker logs threadgate-smoke; docker rm -f threadgate-smoke
+        if: always()
+  browser-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+      - run: python -B scripts/ci_guard.py capacity
+      - run: python -B scripts/ci_guard.py run python -m pip install --no-cache-dir --no-deps PyYAML==6.0.3
+      - run: python3 -B scripts/ci_guard.py preflight
+      - run: python -B scripts/ci_guard.py run python -m pip install --no-cache-dir -r requirements.lock -r requirements-browser.txt
+      - run: python -B scripts/ci_guard.py capacity
+      - run: python -B scripts/ci_guard.py run python -m playwright install --with-deps chromium
+      - run: python -B scripts/ci_guard.py run python scripts/browser_smoke.py
+      - run: python -B scripts/ci_guard.py run python scripts/browser_attack_smoke.py
+      - run: python -B scripts/ci_guard.py run python scripts/recovery_check.py --browser
+  live-evaluation:
+    needs: offline-verification
+    if: github.event_name == 'workflow_dispatch' && inputs.run_live
+    runs-on: ubuntu-latest
+    environment: live-evaluation
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      THREADGATE_MODEL: gemini-2.5-flash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+      - run: python -B scripts/ci_guard.py capacity
+      - run: python -B scripts/ci_guard.py run python -m pip install --no-cache-dir --no-deps PyYAML==6.0.3
+      - run: python3 -B scripts/ci_guard.py preflight
+      - run: python -B scripts/ci_guard.py run python -m pip install --no-cache-dir -r requirements.lock
+      - run: python -B scripts/ci_guard.py run python scripts/doctor.py --require-key
+      - run: python -B scripts/ci_guard.py run python scripts/live_check.py --cases 1
+      - run: python -B scripts/ci_guard.py run python eval/assurance_eval.py --live --confirm-cost
