@@ -1,0 +1,8 @@
+{
+  "version": "assurance-corpus-v1",
+  "prompt_tuning_on_heldout": false,
+  "files": {
+    "development.json": "5da0ffa0f7ae6270b446521abaae4fd64ef730de5809b144fa5a9eccac9a5586",
+    "heldout.json": "3efcf0b7bd7d530623a9571ff0d32d29f65def4a7427ca3d6839fe01240c7f0b"
+  }
+}

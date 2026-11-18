@@ -391,6 +391,8 @@ def render_categories(name: str, per_cat: dict[str, dict], systems: list[str]) -
 
 
 def main() -> int:
+    from threadgate.config import load_environment
+    load_environment(ROOT)
     ap = argparse.ArgumentParser()
     ap.add_argument("--sets", nargs="+", default=["v1", "stress", "combined"], choices=list(SETS))
     ap.add_argument("--systems", nargs="+", default=["rules_raw", "rules_norm", "offline", "compromised", "compromised_q"])
