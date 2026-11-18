@@ -1,0 +1,58 @@
+/* Shared ThreadGate interface. No external fonts, scripts or image requests. */
+:root {
+  --tg-bg:#0b1220; --tg-surface:#111d30; --tg-raised:#17263c;
+  --tg-border:#33465f; --tg-text:#e7eef8; --tg-muted:#b1c1d6;
+  --tg-accent:#83c5ff; --tg-clear:#a3c4ff; --tg-review:#ffd28a; --tg-hold:#ff9caa;
+}
+.stApp {background:var(--tg-bg);color:var(--tg-text);}
+[data-testid="stSidebar"] {background:#0e192a;border-right:1px solid var(--tg-border);}
+.block-container {padding:2.25rem 2rem 4rem;max-width:1320px;}
+h1,h2,h3 {letter-spacing:-.035em;line-height:1.2;}
+h2,h3 {margin-top:.6rem;}
+p,li {line-height:1.65;}
+[data-testid="stCaptionContainer"] {color:var(--tg-muted);}
+.hero {background:var(--tg-surface);border:1px solid var(--tg-border);border-top:3px solid var(--tg-accent);border-radius:16px;padding:30px 32px;margin-bottom:26px;}
+.eyebrow {font-size:11px;letter-spacing:2px;color:var(--tg-accent);font-weight:750;}
+.hero h1 {font-size:clamp(30px,4vw,46px);margin:12px 0 16px;color:#f4f8ff;line-height:1.12;}
+.hero p {color:var(--tg-muted);max-width:740px;font-size:16px;margin-bottom:20px;}
+.pill {display:inline-block;padding:5px 10px;border:1px solid var(--tg-border);border-radius:6px;font-size:10px;font-weight:650;letter-spacing:.7px;color:#c6d9ef;margin:0 6px 6px 0;}
+.panel {background:var(--tg-surface);border:1px solid var(--tg-border);border-radius:12px;padding:20px;margin:12px 0 22px;}
+.email {white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;color:#d6e3f4;max-height:420px;overflow:auto;}
+.hold {border-left:4px solid var(--tg-hold);}
+.review {border-left:4px solid var(--tg-review);}
+.clear {border-left:4px solid var(--tg-clear);}
+.decision-banner {display:flex;gap:18px;align-items:flex-start;}
+.decision-banner strong {font-size:18px;letter-spacing:.06em;min-width:82px;}
+.decision-banner.hold strong {color:var(--tg-hold);}
+.decision-banner.review strong {color:var(--tg-review);}
+.decision-banner.clear strong {color:var(--tg-clear);}
+.decision-banner p {margin:0;color:var(--tg-text);}
+.decision-banner small {display:block;color:var(--tg-muted);margin-top:6px;line-height:1.55;}
+[data-testid="stMetric"] {background:var(--tg-surface);border:1px solid var(--tg-border);border-radius:12px;padding:17px;min-width:0;}
+[data-testid="stMetricValue"] {color:#dcecff;font-size:clamp(20px,2.5vw,30px);overflow-wrap:anywhere;}
+.stButton > button,.stDownloadButton > button,.stFormSubmitButton > button {border-radius:8px;min-height:42px;font-weight:600;}
+.stButton > button[kind="primary"],.stFormSubmitButton > button[kind="primary"] {background:#98d0ff;color:#081525;border:1px solid #98d0ff;}
+.stButton > button[kind="primary"]:hover,.stFormSubmitButton > button[kind="primary"]:hover {background:#bbdfff;color:#081525;border-color:#bbdfff;}
+button:disabled {opacity:.55;cursor:not-allowed;}
+[data-baseweb="input"],[data-baseweb="select"] > div,textarea {border-radius:8px!important;}
+[data-testid="stTabs"] [role="tablist"] {gap:18px;border-bottom:1px solid var(--tg-border);}
+[data-testid="stTabs"] [role="tab"] {padding:12px 0;height:auto;white-space:normal;}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {color:var(--tg-accent);}
+[data-testid="stForm"] {border-color:var(--tg-border);border-radius:12px;}
+mark {background:#3b3650;color:#fff0bf;border-radius:3px;padding:2px;}
+.comparison {border-collapse:collapse;width:100%;font-size:.9rem;color:var(--tg-text);margin:12px 0 20px;}
+.comparison caption {text-align:left;color:var(--tg-muted);padding:8px 0;line-height:1.5;}
+.comparison th,.comparison td {padding:12px;text-align:left;border:1px solid var(--tg-border);overflow-wrap:anywhere;min-width:110px;}
+.comparison th {background:var(--tg-raised);font-weight:650;}
+.comparison mark {background:#3b3650;color:#fff0bf;text-decoration:underline;}
+.comparison del {color:#f2bdc7;}
+button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible {outline:3px solid #83c5ff!important;outline-offset:3px;}
+@media(max-width:640px) {
+  .block-container {padding:1.25rem 1rem 3rem;}
+  .hero {padding:22px 18px;}
+  .hero p {font-size:14px;}
+  .decision-banner {flex-direction:column;gap:8px;}
+  .panel {padding:16px;}
+  [data-testid="stTabs"] [role="tablist"] {gap:12px;}
+}
+@media(prefers-reduced-motion:reduce) {*,*::before,*::after {scroll-behavior:auto!important;transition:none!important;animation:none!important;}}

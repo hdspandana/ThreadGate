@@ -171,6 +171,54 @@ table.tg th {background:#f4f6f8;}
     overflow-wrap: anywhere;
   }
 }
+
+/* ==========================================
+   THREADGATE - LIGHT PANEL TEXT VISIBILITY
+   ========================================== */
+
+/* Destination check panel */
+.destination-panel {
+    color: #172b4d !important;
+}
+
+.destination-panel h1,
+.destination-panel h2,
+.destination-panel h3,
+.destination-panel p,
+.destination-panel table,
+.destination-panel th,
+.destination-panel td,
+.destination-panel span,
+.destination-panel div {
+    color: #172b4d !important;
+}
+
+/* Destination table */
+.destination-panel table.tg {
+    background-color: #ffffff !important;
+}
+
+.destination-panel table.tg th {
+    background-color: #e9eef5 !important;
+    color: #172b4d !important;
+    font-weight: 700;
+}
+
+.destination-panel table.tg td {
+    background-color: #ffffff !important;
+    color: #172b4d !important;
+}
+
+/* Email content */
+.emailbox {
+    background-color: #fbfbfc !important;
+    color: #172b4d !important;
+}
+
+/* Email text and highlighted values */
+.emailbox * {
+    color: #172b4d !important;
+}
 </style>
 """
 
@@ -665,6 +713,7 @@ with st.expander("Demonstrate the single-use verification binding"):
                     request_id=ctx.request_id,
                     destination_digest=ctx.destination_digest,
                     reference_version=ctx.reference_version,
+        request_digest=ctx.request_digest, reference_digest=ctx.reference_digest,
                     attested_by="demo",
                     attested_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 )
