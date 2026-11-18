@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "scope": "Synthetic real-browser analyst / verifier / auditor flow and JSON download",
+  "api_key_used": false,
+  "reference_as_of": "2026-10-06",
+  "gate_after_verification": "HOLD",
+  "workflow_after_verification": "VERIFIED"
+}
