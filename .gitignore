@@ -9,6 +9,7 @@ data/runs/
 *.egg-info/
 .DS_Store
 results/eval_*.json
+/docs/adjudication-v1/COORDINATOR-ONLY.json
 
 *.sqlite3
 *.sqlite3-*

@@ -1,0 +1,34 @@
+{
+  "version": "active-request-review-v1",
+  "status": "AWAITING_INDEPENDENT_HUMAN_REVIEW",
+  "purpose": "Semantic role adjudication only; sanitized account aliases are not format-validation inputs.",
+  "cases": [
+    {
+      "review_id": "R01",
+      "email": {
+        "from": "sender@review.invalid",
+        "reply_to": "",
+        "subject": "Synthetic payment correspondence",
+        "body": "Forwarded old message: pay account number: ACCOUNT-A. Current instruction: our payment account remains unchanged. Account number: ACCOUNT-B."
+      }
+    },
+    {
+      "review_id": "R02",
+      "email": {
+        "from": "sender@review.invalid",
+        "reply_to": "",
+        "subject": "Synthetic payment correspondence",
+        "body": "Synthetic correspondence.\nForwarded old message: pay account number: ACCOUNT-A. Current instruction: our payment account remains unchanged. Account number: ACCOUNT-B.\nPlease retain this message for your records."
+      }
+    },
+    {
+      "review_id": "R03",
+      "email": {
+        "from": "sender@review.invalid",
+        "reply_to": "",
+        "subject": "Synthetic payment correspondence",
+        "body": "Archive excerpt: account number: ACCOUNT-A. New reply: our payment account remains unchanged at account number: ACCOUNT-B."
+      }
+    }
+  ]
+}

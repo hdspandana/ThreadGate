@@ -1,0 +1,47 @@
+{
+  "protocol_version": "active-request-review-v1",
+  "reviewer_code": "",
+  "date_utc": "",
+  "expertise_conflicts": "",
+  "prior_exposure": "",
+  "independent_human_review_completed": false,
+  "cases": [
+    {
+      "review_id": "R01",
+      "current_intent": "",
+      "rationale": "",
+      "uncertainty": "",
+      "field_coverage": {},
+      "mentions": [],
+      "requested_changes": []
+    },
+    {
+      "review_id": "R02",
+      "current_intent": "",
+      "rationale": "",
+      "uncertainty": "",
+      "field_coverage": {},
+      "mentions": [],
+      "requested_changes": []
+    },
+    {
+      "review_id": "R03",
+      "current_intent": "",
+      "rationale": "",
+      "uncertainty": "",
+      "field_coverage": {},
+      "mentions": [],
+      "requested_changes": []
+    }
+  ],
+  "mention_schema_help": {
+    "field_type": "",
+    "exact_value": "",
+    "role": "",
+    "quote": "",
+    "body_start": null,
+    "body_end_exclusive": null,
+    "header_key": null,
+    "certainty": ""
+  }
+}

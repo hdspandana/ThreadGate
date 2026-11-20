@@ -14,17 +14,38 @@ def capture():
 
 
 def error_kind(exc):
-    seen=set()
+    seen = set()
+
     while exc is not None and id(exc) not in seen:
-        seen.add(id(exc));name=type(exc).__name__.lower()
-        code=getattr(exc,'code',getattr(exc,'status_code',None))
-        if str(code)=='429':return 'rate_limit'
-        if str(code) in {'401','403'}:return 'authentication'
-        if 'timeout' in name or 'deadline' in name:return 'timeout'
-        if 'validationerror' in name or 'jsondecode' in name:return 'schema'
-        if 'API_KEY is not set' in str(exc):return 'missing_key'
-        exc=exc.__cause__ or exc.__context__
-    return 'provider'
+        seen.add(id(exc))
+        name = type(exc).__name__.lower()
+
+        code = getattr(exc, "code", None)
+        if code is None:
+            code = getattr(exc, "status_code", None)
+
+        try:
+            code = int(code)
+        except (TypeError, ValueError):
+            code = None
+
+        if code == 429:
+            return "rate_limit"
+        if code in {401, 403}:
+            return "authentication"
+        if code is not None and 400 <= code < 500:
+            return "client_error"
+
+        if "timeout" in name or "deadline" in name:
+            return "timeout"
+        if "validationerror" in name or "jsondecode" in name:
+            return "schema"
+        if "API_KEY is not set" in str(exc):
+            return "missing_key"
+
+        exc = exc.__cause__ or exc.__context__
+
+    return "provider"
 
 
 def observe(attempt,status,elapsed_ms,response=None,error=None):

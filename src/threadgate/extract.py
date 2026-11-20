@@ -26,7 +26,7 @@ Extractors are provided:
 
 from __future__ import annotations
 
-from .provider_observation import observe
+from .provider_observation import error_kind, observe
 
 import logging
 import os
@@ -339,10 +339,13 @@ def gemini_extract(nt: NormalizedText, model: str | None = None) -> Extraction:
             last_err = exc
             observe(attempt+1,"error",(time.monotonic()-attempt_started)*1000,error=exc)
             logging.warning(
-                "Gemini attempt %d/3 failed in %.0fms (%s)",
+                "Gemini attempt %d/3 failed in %.0fms "
+                "(exception=%s, error_kind=%s, http_status=%s)",
                 attempt + 1,
                 (time.monotonic() - attempt_started) * 1000,
                 type(exc).__name__,
+                error_kind(exc),
+                _http_status_code(exc),
             )
             if _is_non_retryable(exc):
                 status = _http_status_code(exc)

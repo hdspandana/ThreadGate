@@ -271,7 +271,16 @@ def test_provider_observation_is_request_local_and_does_not_collect_content():
     with capture() as events:assert events==[]
 
 
-@pytest.mark.parametrize('code,kind',[(429,'rate_limit'),(401,'authentication'),(403,'authentication'),(500,'provider')])
+@pytest.mark.parametrize(
+    'code,kind',
+    [
+        (400, 'client_error'),
+        (429, 'rate_limit'),
+        (401, 'authentication'),
+        (403, 'authentication'),
+        (500, 'provider'),
+    ],
+)
 def test_provider_error_classification_does_not_swallow_status(code,kind):
     exc=RuntimeError('PRIVATE');exc.code=code
     assert error_kind(exc)==kind

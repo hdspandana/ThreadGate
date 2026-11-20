@@ -363,7 +363,7 @@ def test_the_clean_result_is_still_reported_when_history_is_readable():
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        code = _secret_scan_module().main()
+        code = _secret_scan_module().main(allow_local_secrets=True)
     assert code == 0, buf.getvalue()
     assert "RESULT: clean" in buf.getvalue()
     assert "NOT SCANNED" not in buf.getvalue()

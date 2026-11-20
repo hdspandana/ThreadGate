@@ -1,5 +1,33 @@
 # ThreadGate
 
+**Start with [docs/START_HERE.md](docs/START_HERE.md): install → offline checks → add key → live checks → push → deploy.**
+
+## New: Authenticated Team Workspace
+
+**First setup:** `python scripts/manage_workspace.py --username owner`
+
+**Start:** `python scripts/serve.py`
+
+Sign in as administrator, create separate analyst / verifier / auditor accounts,
+then follow **Investigate → Save → Assign → Re-inspect → Attest → Audit**.
+This is a single-organisation, single-host product foundation, not a production
+banking control. Local identities and transactional case history are implemented;
+Optional or organisation-enforced TOTP MFA is included; SSO, distributed storage and payment execution are not. See **docs/PHASES.md**
+for phase status and **deployment/README.md** for setup and hosting boundaries.
+
+## Synthetic demonstration workspace
+
+**Open the unauthenticated synthetic demo:** `python scripts/serve.py --demo`
+
+A midnight / violet / cyan investigation workspace with an Attack Lab,
+evidence highlighting, trusted-record callback walkthroughs, privacy-minimised JSON
+reports and transactional SQLite replay protection. See **docs/UPGRADE.md**.
+The new team workspace has no public deployment verified as part of this upgrade;
+the existing demo link below refers to the original upstream deployment.
+The original research UI remains available with
+`python -m streamlit run app/streamlit_app.py` (it retains its in-memory demo store).
+
+
 **AI interprets the email. Code verifies the change against the record. A human attests before anything executes.**
 
 An action-level gate for payment-detail change requests that arrive by email.
@@ -300,15 +328,15 @@ every case that came back `CLEAR` when it should not have.
 | --- | --- | --- | --- | --- | --- | --- |
 | Rules-only baseline (raw text) | 50.0% | 2 | 3 | 83.3% | 80.0% | 7 |
 | Rules-only baseline + normalisation | 60.0% | 0 | 1 | 100.0% | 93.3% | 7 |
-| **ThreadGate (Gemini)** | *unavailable — no valid run* | | | | | |
+| **ThreadGate (Gemini)** | *pending — unavailable, no valid run* | | | | | |
 | ThreadGate, offline test double | 100.0% | 0 | 0 | 100.0% | 100.0% | 0 |
 | ThreadGate, model steered to say "no change" | 70.0% | **0** | **0** | 100.0% | 100.0% | 6 |
 | ThreadGate, steered model forging a verbatim quote | 70.0% | **0** | **0** | 100.0% | 100.0% | 6 |
-| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *unavailable — no valid run* | | | | | |
-| ThreadGate, ablation: independent destination scan removed | *unavailable — no valid run* | | | | | |
-| ThreadGate, ablation: evidence validation removed | *unavailable — no valid run* | | | | | |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — unavailable, no valid run* | | | | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — unavailable, no valid run* | | | | | |
+| ThreadGate, ablation: evidence validation removed | *pending — unavailable, no valid run* | | | | | |
 
-**Every row marked *unavailable — no valid run* is model-backed**: the Gemini
+**Every row marked *pending — unavailable, no valid run* is model-backed**: the Gemini
 row, the model-alone baseline and the two ablations all need a working
 `GEMINI_API_KEY` and a model call that succeeds on every case. A Gemini-backed
 evaluation has been attempted; its model-backed systems were reported `INVALID`
@@ -335,13 +363,13 @@ Three extractors appear in this evaluation and they are not interchangeable:
 | --- | --- | --- | --- | --- | --- | --- |
 | Rules-only baseline (raw text) | 60.0% | 2 | 3 | 84.6% | 81.2% | 5 |
 | Rules-only baseline + normalisation | 70.0% | 0 | 1 | 100.0% | 93.8% | 5 |
-| **ThreadGate (Gemini)** | *unavailable — no valid run* | | | | | |
+| **ThreadGate (Gemini)** | *pending — unavailable, no valid run* | | | | | |
 | ThreadGate, offline test double | 100.0% | 0 | 0 | 100.0% | 100.0% | 0 |
 | ThreadGate, model steered to say "no change" | 80.0% | **0** | **0** | 100.0% | 100.0% | 4 |
 | ThreadGate, steered model forging a verbatim quote | 80.0% | **0** | **0** | 100.0% | 100.0% | 4 |
-| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *unavailable — no valid run* | | | | | |
-| ThreadGate, ablation: independent destination scan removed | *unavailable — no valid run* | | | | | |
-| ThreadGate, ablation: evidence validation removed | *unavailable — no valid run* | | | | | |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — unavailable, no valid run* | | | | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — unavailable, no valid run* | | | | | |
+| ThreadGate, ablation: evidence validation removed | *pending — unavailable, no valid run* | | | | | |
 
 ### Set 3 — combined, stress evaluation only (40 cases)
 
@@ -351,13 +379,13 @@ Not an unbiased benchmark. Shown for completeness and for the category view.
 | --- | --- | --- | --- | --- | --- | --- |
 | Rules-only baseline (raw text) | 55.0% | 4 | 6 | 84.0% | 80.6% | 12 |
 | Rules-only baseline + normalisation | 65.0% | 0 | 2 | 100.0% | 93.5% | 12 |
-| **ThreadGate (Gemini)** | *unavailable — no valid run* | | | | | |
+| **ThreadGate (Gemini)** | *pending — unavailable, no valid run* | | | | | |
 | ThreadGate, offline test double | 100.0% | 0 | 0 | 100.0% | 100.0% | 0 |
 | ThreadGate, model steered to say "no change" | 75.0% | **0** | **0** | 100.0% | 100.0% | 10 |
 | ThreadGate, steered model forging a verbatim quote | 75.0% | **0** | **0** | 100.0% | 100.0% | 10 |
-| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *unavailable — no valid run* | | | | | |
-| ThreadGate, ablation: independent destination scan removed | *unavailable — no valid run* | | | | | |
-| ThreadGate, ablation: evidence validation removed | *unavailable — no valid run* | | | | | |
+| The model alone, deciding the verdict (evaluation baseline, never a code path in the gate) | *pending — unavailable, no valid run* | | | | | |
+| ThreadGate, ablation: independent destination scan removed | *pending — unavailable, no valid run* | | | | | |
+| ThreadGate, ablation: evidence validation removed | *pending — unavailable, no valid run* | | | | | |
 
 ### Where the reading is actually needed
 
@@ -497,20 +525,23 @@ prototype guarantees:
 - **No cryptographic signatures, and no PKI.** A verification event is a
   *binding*, not a proof of identity: it ties an attestation to one request, one
   destination and one record version, and it refuses to be used twice. It does
-  not prove *who* performed the check. There is no key material anywhere in this
-  project and no identity is asserted.
+  not prove *who* performed the check by itself. The original research UI does
+  not assert identity. The authenticated team workspace records local account
+  identity and supports TOTP MFA; its MFA seeds are separate from verification
+  bindings. No event-signing keys or certificate authority are implemented.
 - **No automatic reference updates.** Nothing in ThreadGate ever writes to the
   vendor record. Updating a record is a human operation performed out of band
   after the callback; the gate reads the version and refuses to carry a
   verification across it. A prototype that could rewrite its own reference
   would not be a reference.
-- **The verification store is neither durable nor distributed.** Consumed
-  event ids live in memory and are not written to disk by the product path, so
+- **The original research UI verification store is neither durable nor distributed.** Consumed
+  event ids in the original research UI live in memory and are not written to disk by the product path, so
   a restart begins with an empty store. This is a single-process prototype, not
   a replicated service, and the single-use guarantee is scoped to the store that
   is currently live: it holds for as long as that process does, and no longer.
   `AttestationStore.dump()` and `.restore()` exist so a deployment that needs
-  durability can persist it; the demo does not. Stated precisely in **R3** above.
+  durability can persist it; the original research UI does not. The synthetic workbench and authenticated team workspace instead use
+  transactional SQLite storage, scoped to one persistent local filesystem. Stated precisely in **R3** above.
 
 `tests/test_reference_and_attestation.py` fails if this list stops saying
 something that is still true, and it also fails if it keeps disclaiming
@@ -523,8 +554,8 @@ directions, which is the only way a "not built" list stays honest.
 pip install -r requirements.txt
 cp .env.example .env        # put your GEMINI_API_KEY in .env; it is gitignored
 python scripts/kill_gate.py # 18 go/no-go checks; read this before trusting anything
-python -m pytest            # 679 tests, no network needed
-python scripts/secret_scan.py   # credential scan; exit 1 on a hit, 3 if history is unreadable
+python -m pytest            # 1056 tests, no network needed
+python scripts/secret_scan.py --allow-local-secrets   # credential scan; exit 1 on a hit, 3 if history is unreadable
 python eval/run_eval.py     # writes results/; model rows skip cleanly without a key
 python eval/run_eval.py --require-gemini   # exits 2 if any model row was skipped
 python scripts/serve.py     # the Streamlit demo (python -m streamlit; no shell needed)
@@ -585,4 +616,71 @@ hostile email has already arrived and gates the *action* it requests.
 
 ## Prior work
 
-Everything here was built during the hackathon window. See `PRIOR_WORK.md`.
+The original hackathon prototype chronology is in `PRIOR_WORK.md`. Later team-workspace
+and release-readiness additions are tracked in `docs/PHASES.md` and
+`docs/START_HERE.md`; they are not claimed as work from the original hackathon window.
+
+
+## Engineering assurance — current local candidate
+
+See [the engineering assurance report](docs/ENGINEERING_ASSURANCE.md) for the
+actual baseline, content-bound verification, schema-3 local audit chain/receipts,
+32-case development / reserved 16-case heldout corpus, independent extraction and
+gate metrics, 48-run synthetic attack matrix, privacy UI and exact evidence.
+**No successful real-model evaluation or production deployment is claimed.**
+
+```bash
+python scripts/live_check.py --cases 1               # single paid smoke; key required
+python eval/assurance_eval.py --live --confirm-cost  # development only, after passing smoke
+# Explicit final run only; do not tune on this reserved split:
+python eval/assurance_eval.py --freeze-config data/runs/frozen.json --development-report data/runs/assurance-evaluation.json --confirm-development-reviewed
+python eval/assurance_eval.py --live --confirm-cost --split heldout --freeze-file data/runs/frozen.json --confirm-heldout-final-run
+python eval/assurance_eval.py                       # offline diagnostic, never provider performance
+python scripts/attack_report.py                    # deterministic adversarial simulations
+python scripts/verify_audit.py --db /private/path/workspace.sqlite3
+```
+
+Do not share keys in chat or commit them. Local reports are unsigned evidence,
+not proof of an independent audit. Optional pinned assurance tools are in
+`requirements-assurance.txt`. Release packaging supports `--require-clean` and
+embeds source-commit identity; a dirty build is explicitly marked uncommitted.
+
+
+### Current continuous-workflow release
+
+[Current release procedure and evidence](docs/WORKFLOW_RELEASE.md) supersedes
+historical assurance reports. Heldout now runs **separately**, requires an intact
+configuration freeze, and is locally marked consumed before the first call.
+Deleting that unsigned local ledger defeats the guard; it is not independent
+proof of evaluation provenance. Never tune on a consumed heldout split.
+
+```bash
+python scripts/recovery_check.py                     # temporary synthetic restore; no production DB
+python scripts/recovery_check.py --browser           # actual UI on restored temporary store
+python scripts/verify_release.py --require-commit    # ZIP/manifest + committed-blob comparison
+```
+
+
+### Evaluation claim boundaries and review/demo handoff
+
+The original 32/16 corpus labels remain unchanged and are not independently
+adjudicated. [The current label/design review](docs/EVALUATION_REVIEW.md) records
+correlated templates, sparse field gold and disputed forwarded-history semantics.
+Evaluator v3 includes these limits; no cases are excluded to improve scores.
+[Independent review handoff](docs/INDEPENDENT_REVIEW_HANDOFF.md) and
+[seven-minute synthetic demonstration](docs/SYNTHETIC_DEMO.md) are prepared,
+not claims of external review or participant results. Public compose enforces MFA
+regardless of the local template's optional setting. No production readiness claimed.
+
+
+### Latest storage-budgeted research checkpoint
+
+See [external benchmark suitability](docs/benchmarks/SUITABILITY-v1.md),
+[blinded annotation instructions](docs/adjudication-v1/REVIEW-INSTRUCTIONS.md) and
+[storage/test progress](docs/STORAGE_EVALUATION_PROGRESS.md). The current 826 is a
+collection count, not a claimed green run. This continuation's complete release
+gate is blocked by a runtime dependency that cannot safely fit its storage budget;
+no new release archive or live Gemini result is claimed. Human adjudication awaits
+independent reviewers. Existing release artifacts retain their original identities.
+
+CI hardening and mandatory private-review/public-push restrictions: [CI_HARDENING.md](docs/CI_HARDENING.md). Workflow preparation is not a remote run.

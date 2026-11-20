@@ -1,3 +1,7 @@
+> The original submission narrative below describes the hackathon prototype.
+> Later team-workspace additions are tracked in docs/PHASES.md and are not
+> claimed as work completed during the original hackathon window.
+
 # Devpost submission — draft
 
 **Status: draft. Nothing here quotes a model result that has not been measured.**
@@ -80,7 +84,7 @@ on file, and if not, does a human have to look at it?**
 ### 2. Technical approach and components
 
 **Stack:** Python, Google Gemini (`gemini-2.5-flash`) for interpretation only,
-Pydantic for output contracts, Streamlit for the demo, pytest for the 611-test
+Pydantic for output contracts, Streamlit for the demo, pytest for the 1056-test
 suite. No embeddings, no vector store, no OCR, no URL scanning, no threat feed.
 
 The pipeline is deliberately asymmetric. The model sits in exactly one box, and
@@ -326,7 +330,7 @@ of model behaviour, and must not be captioned as Gemini output. Re-running
    **2** if any model system was skipped, so a silently absent key cannot look
    like a completed run. Output lands in `results/`.
 2. Re-run `python scripts/kill_gate.py` and `python -m pytest`; both must be
-   green on the final commit (611 tests, 18 kill-gate checks).
+   green on the final commit (1056 tests, 18 kill-gate checks).
 3. `git log --reverse` — the first commit must be dated after 2026-10-03 12:00
    EDT / 21:30 IST.
 4. Confirm no key is committed: `python scripts/secret_scan.py` must print
@@ -346,3 +350,10 @@ of model behaviour, and must not be captioned as Gemini output. Re-running
    the refreshed PNGs.
 6. Push the public repo and deploy to Community Cloud; fill in the repo,
    video and deployment URLs above.
+
+
+Storage-budgeted follow-up: current collection is 826, not evidence that all were
+executed successfully here. Benchmark suitability and a blinded review packet are
+prepared; independent humans and a complete storage-authorized runtime are still
+required. Latest full gate is blocked, no new released ZIP or live Gemini result.
+See `docs/STORAGE_EVALUATION_PROGRESS.md` for exact executed results.
